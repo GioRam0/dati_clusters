@@ -23,7 +23,8 @@ FILES = {
     "1vCVki3mrX8L-ym57Cjk4BG9nu5UJwoJ8" : "urban_isl.gokg"
     "15Q3WPva81DzoA6PnfT5rBlxVC3CuN_lh" : "ELE.tif",
     "1nkDF5RHibPC_uy0G3SAKqp8SC-ECMTT0" : "global_power_dens.tif",
-    "1fp9e6hX_M3CvKE2Ok_lccBwIIhFs8yC4" : "GDP.tif"
+    "1fp9e6hX_M3CvKE2Ok_lccBwIIhFs8yC4" : "GDP.tif",
+    "1TeuGEcqVDavRIcxU4sdeGiqJ9Ltda5qf" : "geothermal_potential.gpkg"
 }
 
 START_DATE = "2023-12-01"

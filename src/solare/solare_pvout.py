@@ -13,14 +13,14 @@ cartella_progetto = os.path.join(cartella_corrente, "..", "..")
 
 #importo dati solari
 #annuali
-percorso_file= os.path.join(cartella_progetto, "files/raw", "PVOUT.tif")
+percorso_file= os.path.join(cartella_progetto, "files", "PVOUT.tif")
 src = rasterio.open(percorso_file)
 #mensili
 for i in range(1,13):
     if i<10:
-        percorso_file=os.path.join(cartella_progetto, "files/raw", f"PVOUT_month/PVOUT_0{i}.tif")
+        percorso_file=os.path.join(cartella_progetto, "files", f"PVOUT_month/PVOUT_0{i}.tif")
     else:
-        percorso_file=os.path.join(cartella_progetto, "files/raw", f"PVOUT_month/PVOUT_{i}.tif")
+        percorso_file=os.path.join(cartella_progetto, "files", f"PVOUT_month/PVOUT_{i}.tif")
     globals()[f"src{i}"] = rasterio.open(percorso_file)
 #bordi del file
 bounds = box(*src.bounds)

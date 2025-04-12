@@ -21,6 +21,7 @@ Riporto i files caricati e le API usate e i relativi link di riperimento:
 -temperatura, precipitazioni, heating days, cooling days https://developers.google.com/earth-engine/datasets/catalog/ECMWF_ERA5_DAILY, https://developers.google.com/earth-engine/datasets/catalog/ECMWF_ERA5_MONTHLY
 -GDP.tif, https://www.ngdc.noaa.gov/eog/dmsp/download_gdp.html
 -nightlight https://developers.google.com/earth-engine/datasets/catalog/NOAA_VIIRS_DNB_ANNUAL_V22
+-geothermal 
 
 # Prelavori sulle isole
 
@@ -49,6 +50,9 @@ Il file è in formato GEOTIFF, realizzato dal NOAA, centro governativo statunite
 
 # Nightlights
 Alla luce della correlazione precedente ho pensato di raccogliere personalmente dati relativi all'illuminazione notturna per avere valori aggiornati e recenti. Ho notato varianze significative fra due anni consecutivi, mi ha fatto dubitare dell'affidabilità o della necessità di eseguire qualche operazione tra i dati raccolti.
+
+# Geothermal
+Il file scaricabile dal link consiste in un file .xlsx. Dopo aver eliminato delle colonne inutili ai fini del nostro progetto, l'ho convertito in un csv per poterlo aprire in QGIS. Tramite QGIS l'ho nuovamente covertito in .gpkg prima di eseguire un'operazione di intersezione sulle isole cui avevo applicato un buffer di 20000 metri (i siti geotermici possono anche essere realizzati offshore). In questo modo ho ridotto le dimensioni del file e il numero di suoi elementi conservando le righe rilevanti per alleggerire il carico computazionale.
 
 # Potential offshore
 https://datacatalog.worldbank.org/search/dataset/0037787/Global-Offshore-Wind-Technical-Potential

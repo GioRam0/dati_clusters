@@ -3,6 +3,7 @@ import geopandas as gpd
 from shapely.ops import unary_union
 import pickle
 import os
+import utm
 
 # cartella in cui si trova lo script
 cartella_corrente = os.path.dirname(os.path.abspath(__file__))
