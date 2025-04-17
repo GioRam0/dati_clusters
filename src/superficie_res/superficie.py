@@ -1,157 +1,195 @@
-#importo le librerie
+#importo librerie
 import geopandas as gp
-import numpy as np
-from shapely.ops import unary_union
-import rasterio
-import rasterio.mask
-import rasterio.features
+import ee
 import pickle
-import utm
 import os
+import sys
 
 # cartella in cui si trova lo script
 cartella_corrente = os.path.dirname(os.path.abspath(__file__))
 cartella_progetto = os.path.join(cartella_corrente, "..", "..")
 
-#importo le isole
-percorso_isl = os.path.join(cartella_progetto, "data/isole_filtrate", "isole_filtrate2.gpkg")
-gdfisl = gp.read_file(percorso_isl)
-#applico un buffer nullo per rendere tutte le geometrie valide
-gdfisl['geometry']=gdfisl.geometry.buffer(0)
+#importo coordinate isole
+isl_path=os.path.join(cartella_progetto, "data/isole_filtrate", "isole_filtrate2.gpkg")
+gdf = gp.read_file(isl_path)
 
-#funzione che calcola l'area di una figura
-def calcola_area_poligono(figura):
-    lon, lat = figura.centroid.x, figura.centroid.y
-    #individuo la zona utm per usare il sistema di coordinate appropriato, necessario per i calcoli di aree
-    utm_zone = utm.from_latlon(lat, lon)
-    utm_crs = f"EPSG:{32600 + utm_zone[2]}"
-    gf = gp.GeoDataFrame(geometry=[figura], crs="EPSG:4326")
-    gf = gf.to_crs(utm_crs)
-    return gf.area.iloc[0]
+#credenziali di accesso a API google Earth
+# percorso file config
+percorso_config = os.path.join(cartella_corrente, "..", "config.py")
+sys.path.append(os.path.dirname(percorso_config))
+#importo le variabili config e le credenziali a google earth
+import config
+proj = config.proj
+credentials_path = os.path.join(cartella_corrente, "..", "credentials")
+ee.Initialize(project=proj)
 
-#dizionario contenente le intersezioni tra le isole e le zone non agibili per res
-poligoni={}
-
-#definisco funzione che prende in input un geodataframe e calcola le intersezioni tra le sue forme e le varie isole.
-#unisce i poligoni intersezioni delle isole ai poligoni delle isole nel dizionario
-def intersezioni(gd):
-    k=0
-    #itero per le isole
-    for ind,isl in gdfisl.iterrows():
-        if k%10==0:
-            print(k)
-            print(len(gd))
-        k+=1
-        codice=isl.ALL_Uniq
-        #lista con i poligoni intersecati dall'isola in questione
-        poli=[]  
-        #itero per il geodataframe in input 
-        for ind1,el1 in gd.iterrows():
-            if el1.geometry.intersects(isl.geometry):
-                poli.append(el1.geometry.intersection(isl.geometry))
-                gdf=gdf.drop(ind1)
-        #unione dei poligoni
-        unione=unary_union(poli)
-        #unione con le altre aree dell'isola
-        if codice not in poligoni:
-            poligoni[codice]=unione
-        else:
-            poligoni[codice]=poligoni[codice].union(unione)
-
-#importo il file con le aree urbane
-percorso_urban = os.path.join(cartella_progetto, "files", "urban_isl.gpkg")
-gdf = gpd.read_file(percorso_urban)
-#applico un buffer nullo per rendere tutte le geometrie valide
-gdf['geometry']=gdf.geometry.buffer(0)
-intersezioni(gdf)
-
-#importo i laghi
-percorso_laghi = os.path.join(cartella_progetto, "files", "lakes_island.gpkg")
-gdf = gp.read_file(percorso_laghi)
-#applico un buffer nullo per rendere tutte le geometrie valide
-gdf['geometry']=gdf.geometry.buffer(0)
-intersezioni(gdf)
-
-#importo le aree protette che sono divise in 3 files
-percorso_pa = os.path.join(cartella_progetto, "files", "pa1.gpkg")
-gdf = gp.read_file(percorso_pa)
-#applico un buffer nullo per rendere tutte le geometrie valide
-gdf['geometry']=gdf.geometry.buffer(0)
-intersezioni(gdf)
-
-percorso_pa = os.path.join(cartella_progetto, "files", "pa2.gpkg")
-gdf = gp.read_file(percorso_pa)
-#applico un buffer nullo per rendere tutte le geometrie valide
-gdf['geometry']=gdf.geometry.buffer(0)
-intersezioni(gdf)
-
-percorso_pa = os.path.join(cartella_progetto, "files", "pa3.gpkg")
-gdf = gp.read_file(percorso_pa)
-#applico un buffer nullo per rendere tutte le geometrie valide
-gdf['geometry']=gdf.geometry.buffer(0)
-intersezioni(gdf)
-
-#importo il file relativo alle pendenze, esprime per i vari pixel la percentuale di superficie all'interno del pixel con pendenza maggiore del 20%
-percorso_pendenze = os.path.join(cartella_progetto, "files", "slope.asc")
-src=rasterio.open(percorso_pendenze)
-banda=src.read(1)
-bounds = box(*src.bounds)
-maxy=bounds.exterior.coords[1][1]
-miny=bounds.exterior.coords[0][1]
-
-#dizionari contenenti come chiavi il codice dell'isola e come valori la superficie res e la sua percentuale rispetto all'isola
-aree_res={}
-aree_res_rel={}
-k=0
+#i=4
+#multi=gdf.loc[i,'geometry']
+#print(gdf.loc[i,'IslandArea'])
+#print(multi.centroid)
+#point=ee.Geometry.Point(-49.074993,-1.805626)
+#creo i dizionari da riempire
+superficie={}
+isl_nod={}
+ele_max={}
 #itero per le isole
-for ind,isl in gdfisl.iterrows():
-    if k%100==0:
-        print(k)
-    k+=1
+for i,isl in gdf.iterrows():
+    multi=isl.geometry
     codice=isl.ALL_Uniq
-    #il multipoligono rappresenta le zone dell'isola che non appartengono a nessuno dei gruppi precedenti
-    if codice not in poligoni:
-        multipoligono=isl.geometry
+    #area1=isl.IslandArea
+    #creo la figuro come ee.Geometry, con cui google lavora
+    multip_list =[ 
+            [list(vertice) for vertice in poligono.exterior.coords]
+            for poligono in multi.geoms
+    ]   
+    ee_geometry = ee.Geometry.MultiPolygon(multip_list)
+    #calcolo l'area di questa figura
+    area0=ee_geometry.area().getInfo()
+
+    #dataset delle aree protette, da escludere
+    wdpa_polygons = ee.FeatureCollection('WCMC/WDPA/current/polygons')
+    #aree che intersecano l'isola
+    intersecting_wdpa = wdpa_polygons.filter(ee.Filter.intersects('.geo', ee_geometry))
+    union_of_intersecting_wdpa = intersecting_wdpa.union()
+    #elimino le aree protette
+    ee_geometry = ee_geometry.difference(union_of_intersecting_wdpa)
+    #se rimane trppo poco terreno (2 ettari, corrispondo a meno di un MW di fotovoltaico)
+    #mi fermo
+    if ee_geometry.area().getInfo()<20000:
+        superficie[codice]=0
+        break
+    #importo image sull'elevazione
+    ele=ee.Image("USGS/GMTED2010_FULL")
+    #ritaglio sull'isola e seleziono la banda opportuna
+    ele_clip=ele.clip(ee_geometry).select('mea')
+    #creo una maschera con i pixel con elevazione <2000 metri, applico la maschera e ricavo la nuova geometria
+    ele_mask=ele_clip.lt(2000).rename('ele_mask')
+    ele_image=ele_clip.updateMask(ele_mask)
+    ele_geometry=ele_image.geometry()
+    ee_geometry=ee_geometry.intersection(ele_geometry, ee.ErrorMargin(10))
+    #print(ee_geometry.area().getInfo())
+    #calcolo elevazione max
+    max_value_dict = ele_clip.reduceRegion(
+        reducer=ee.Reducer.max(),
+        geometry=ee_geometry,
+        scale=ele_clip.projection().nominalScale(),
+        bestEffort=True,
+        maxPixels=1e9
+    )
+    max=max_value_dict.getInfo()
+    ele_max[codice]=max
+    
+    #calcolo l'image con la pendenza e creo la maschera con i valori minori di 11.31 gradi (20%)
+    slope = ee.Terrain.slope(ele_clip)
+    slope_mask=slope.lt(11.31).rename('slope_mask')
+    slope_image=slope.updateMask(ele_mask)
+    slope_geometry=slope_image.geometry()
+    ee_geometry=ee_geometry.intersection(slope_geometry, ee.ErrorMargin(10))
+    #print(ee_geometry.area().getInfo())
+
+    #alternativa, cofnronta
+    #importo il dataset sull'elevazione
+    #ele=ee.ImageCollection("JAXA/ALOS/AW3D30/V3_2")
+    #trovo le immagini che intersecano l'isola
+    #collection=ele.filterBounds(ee_geometry)
+    #se una sola (isola interamente contenuta) creo la maschera e la applico
+    #if collection.size().getInfo()==1:
+    #    ele_clip=collection.first().clip(ee_geometry).select('DSM')
+    #    ele_mask=ele_clip.first().lt(2000).rename('ele_mask')
+    #    ele_image=ele_clip.updateMask(ele_mask)
+    #    ele_geometry=ele_image.geometry()
+    #    ee_geometry=ee_geometry.intersection(ele_geometry, ee.ErrorMargin(10))
+    #    max_value_dict = ele_clip.reduceRegion(
+    #        reducer=ee.Reducer.max(),
+    #        geometry=ee_geometry,
+    #        scale=ele_clip.projection().nominalScale(),
+    #        bestEffort=True,
+    #        maxPixels=1e9
+    #    )
+    #    max=max_value_dict.getInfo()
+    #    ele_max[codice]=max
+    #
+    #    slope = ee.Terrain.slope(ele_clip)
+    #    slope_mask=slope.lt(11.31).rename('ele_mask')
+    #    slope_image=slope.updateMask(ele_mask)
+    #    slope_geometry=slope_image.geometry()
+    #    ee_geometry=ee_geometry.intersection(slope_geometry, ee.ErrorMargin(10))
+    #se piu di uno itero per le diverse immagini e calcolo le zone da escludere sottraedole di volta in volta dalla ee_geometry
+    #else:
+    #    list=collection.toList(collection.size())
+    #    max=0
+    #    for i in range(collection.size().getInfo()):
+    #        band=list.get(i).select('DSM')
+    #        ele_mask=band.gt(2000).rename('ele_mask')
+    #        ele_image=band.updateMask(ele_mask)
+    #        ele_geometry=ele_image.geometry()
+    #        ee_geometry=ee_geometry.difference(ele_geometry, ee.ErrorMargin(10))
+    #        max_value_dict = ele_clip.reduceRegion(
+    #            reducer=ee.Reducer.max(),
+    #            geometry=ee_geometry,
+    #            scale=ele_clip.projection().nominalScale(),
+    #            bestEffort=True,
+    #            maxPixels=1e9
+    #        )
+    #        max1=max_value_dict.getInfo()
+    #        if max1>max:
+    #            max=max1
+    #        slope = ee.Terrain.slope(band)
+    #        slope_mask=slope.gt(11.31).rename('ele_mask')
+    #        slope_image=slope.updateMask(ele_mask)
+    #        slope_geometry=slope_image.geometry()
+    #        ee_geometry=ee_geometry.intersection(slope_geometry, ee.ErrorMargin(10))
+    #    ele_max[codice]=max
+    #print(ee_geometry.area().getInfo())
+
+    #importo dataset sulle caratteristiche del terreno
+    lc100_collection = ee.ImageCollection("COPERNICUS/Landcover/100m/Proba-V-C3/Global")
+    lc_image = ee.Image(lc100_collection.sort('system:time_start', False).first()).select('discrete_classification')
+    #valori corrispondenti ai terreni non agibili
+    excluded_values = [0, 40, 50, 70, 80, 90, 111, 112, 113, 114, 115, 116, 200]
+    lc_clipped = lc_image.clip(ee_geometry)
+    #maschera per i punti senza dati, se troppi raccolgo questa informazione nel dizionario nodata
+    lc_mask = lc_clipped.neq(excluded_values[0])
+
+    one_count = lc_mask.reduceRegion(
+        reducer=ee.Reducer.sum(),
+        geometry=lc_clipped.geometry(),
+        scale=lc_clipped.projection().nominalScale(),
+        maxPixels=1e9
+    ).get('discrete_classification').getInfo()
+    zeros = lc_mask.eq(0)
+    zero_count = zeros.reduceRegion(
+        reducer=ee.Reducer.sum(),
+        geometry=lc_clipped.geometry(),
+        scale=lc_clipped.projection().nominalScale(),
+        maxPixels=1e9
+    ).get('discrete_classification').getInfo()
+    if (zero_count/one_count)>0.5:
+        isl_nod[codice]=1
     else:
-        multipoligono=isl.geometry.difference(poligoni[codice])
-    #l'elemento multipoligono potrebbe anche essere un poligono, in caso non dà problemi
-    if multipoligono.geom_type=='MultiPolygon':
-        for i in range(len(multipoligono.geoms)):
-            #nel caso l'elemento fosse un lynestring che non va bene con il raster, in caso lo elimino
-            if multipoligono.geoms[i].geom_type == 'LineString':
-                multipoligono=multipoligono.difference(multipoligono.geoms[i])
-    #limiti del  file slope, non copre l'intero globo
-    if (((isl.geometry.bounds[1])>miny) & ((isl.geometry.bounds[3])<maxy)):
-        out_image, out_transform = rasterio.mask.mask(src, [multipoligono], crop=True)
-        out_image = out_image[0]
-        maschera = rasterio.features.rasterize([multipoligono],
-                                               out_shape=out_image.shape,
-                                               transform=out_transform,
-                                               fill=0,
-                                               default_value=1)
-        valori_poligono = out_image[maschera == 1]
-        #calcolo la percentuale media di superficie con pendenza maggiore del 20% all'interno del multipoligono
-        if valori_poligono.size > 0:
-            perc_media = np.mean(valori_poligono)/100000 #raster con valori percentuali moltiplicati per mille
-        else:
-            perc_media=0
-    else:
-        perc_media=0
-    area_isl=calcola_area_poligono(isl.geometry)
-    area=calcola_area_poligono(isl.geometry)
-    #sottraggo l'area delle zone non agibili per impianti res
-    area-=calcola_area_poligono(multipoligono)
-    #moltiplico l'area rimanente per la percentuale con pendenza accettabile
-    area=area*(1-perc_media)
-    aree_res[codice]=area/1000000 #conversione m^2 km^2
-    aree_res_rel[codice]=((area/area_isl)*100)
+        isl_nod[codice]=0
+    
+    #itero per gli altri terreni non agibili e applico la maschera
+    for i in range(1, len(excluded_values)):
+        lc_mask=lc_mask.And(lc_clipped.neq(excluded_values[i]))
+    lc_image=lc_clipped.updateMask(lc_mask)
+    lc_geometry=lc_image.geometry()
+    ee_geometry=ee_geometry.intersection(lc_geometry, ee.ErrorMargin(10))
+
+    #area agibile
+    area=ee_geometry.area().getInfo()
+    print(area1/area)
+    superficie[codice]=(area/area0)*100
 
 #esportazione
-percorso_folder_out = os.path.join(cartella_progetto, "data/dati_finali/sup_res")
+percorso_folder_out = os.path.join(cartella_progetto, "data/dati_finali/superficie_res")
 os.makedirs(percorso_folder_out, exist_ok=True)
-percorso_file=os.path.join(percorso_folder_out, "area_res.pkl")
+percorso_file=os.path.join(percorso_folder_out, "superficie_res.pkl")
 with open(percorso_file, "wb") as f:
-    pickle.dump(area_res, f)
-percorso_file=os.path.join(percorso_folder_out, "area_res_rel.pkl")
+    pickle.dump(superficie, f)
+percorso_file=os.path.join(percorso_folder_out, "superficie_nod.pkl")
 with open(percorso_file, "wb") as f:
-    pickle.dump(area_res_rel, f)
+    pickle.dump(isl_nod, f)
+percorso_file=os.path.join(percorso_folder_out, "ele_max.pkl")
+with open(percorso_file, "wb") as f:
+    pickle.dump(ele_max, f)
