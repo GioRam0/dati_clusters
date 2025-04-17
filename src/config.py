@@ -20,7 +20,7 @@ FILES = {
     "1qsgUlsm59KkYEHF7TsxG6uTS238pbaow" : "PVOUT_.10tif" ,
     "1GTE2H6kvDdvoyWFfkp_w9k6kSQabsXEb" : "PVOUT_.11tif" ,
     "1ohBmGbiNdufaF_iB4NzUN45F4Vad3RZq" : "PVOUT_12.tif" ,
-    "1vCVki3mrX8L-ym57Cjk4BG9nu5UJwoJ8" : "urban_isl.gokg"
+    "1vCVki3mrX8L-ym57Cjk4BG9nu5UJwoJ8" : "urban_isl.gokg",
     "15Q3WPva81DzoA6PnfT5rBlxVC3CuN_lh" : "ELE.tif",
     "1nkDF5RHibPC_uy0G3SAKqp8SC-ECMTT0" : "global_power_dens.tif",
     "1fp9e6hX_M3CvKE2Ok_lccBwIIhFs8yC4" : "GDP.tif",

@@ -58,7 +58,7 @@ for ind,isl in gdfisl.iterrows():
         rel_urban_areas[codice]=0
 
 #esportazione
-percorso_folder_out = os.path.join(cartella_progetto, "data/dati_finali")
+percorso_folder_out = os.path.join(cartella_progetto, "data/dati_finali/urban")
 percorso_out = os.path.join(percorso_folder_out, "urban_areas.pkl")
 with open(percorso_out, "wb") as f:
     pickle.dump(urban_areas, f)

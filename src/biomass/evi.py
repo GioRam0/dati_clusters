@@ -8,7 +8,7 @@ import sys
 
 # cartella in cui si trova lo script
 cartella_corrente = os.path.dirname(os.path.abspath(__file__))
-cartella_progetto = os.path.join(cartella_corrente, "..". "..")
+cartella_progetto = os.path.join(cartella_corrente, "..", "..")
 
 #importo coordinate isole
 isl_path=os.path.join(cartella_progetto, "data/isole_filtrate", "isole_filtrate2_arro2.gpkg")
@@ -22,7 +22,7 @@ sys.path.append(os.path.dirname(percorso_config))
 import config
 proj = config.proj
 credentials_path = os.path.join(cartella_corrente, "..", "credentials")
-ee.Initialize(project='proj')
+ee.Initialize(project=proj)
 
 dataset = ee.ImageCollection("MODIS/061/MOD13A3") \
     .filterDate("2022-01-01", "2023-12-31")
@@ -57,17 +57,17 @@ for ind,isl in gdf.iterrows(): #itero per le isole
     mean_list = evi_means.aggregate_array("mean_evi").getInfo()
     if mean_list==[]:
         evi[codice]=np.nan
-        isl_nod.[codice]=1
+        isl_nod[codice]=1
     else:
         evi[codice]=np.mean(mean_list)
-        isl_nod.[codice]=0
+        isl_nod[codice]=0
 
 #esportazione
 percorso_folder_out = os.path.join(cartella_progetto, "data/dati_finali/biomass")
 os.makedirs(percorso_folder_out, exist_ok=True)
 percorso_file=os.path.join(percorso_folder_out, "evi.pkl")
-with open(evi, "wb") as f:
-    pickle.dump(lights_mean, f)
+with open(percorso_file, "wb") as f:
+    pickle.dump(evi, f)
 percorso_file=os.path.join(percorso_folder_out, "evi_nodata.pkl")
 with open(percorso_file, "wb") as f:
     pickle.dump(isl_nod, f)
