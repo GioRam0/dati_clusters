@@ -10,6 +10,7 @@ Le isole sono prese dal seguente sito https://www.sciencebase.gov/catalog/item/6
 Le uniche isole di nostro interesse sono le seconde, le altre non sono abbastanza rilevanti per il nostro studio. Ho selezionato il gruppo in questione e l'ho esportato come file gpkg, di più facile manipolazione.
 
 Per scaricare i vari files del progetto (tra cui questo delle isole) è necessario runnare il programma src/1-files/files.py che avvierà il download dei file caricati in una cartella google drive e li posizionaerà nella cartella del progetto opportuna. Il file in questione deve essere il primo ad essere girato poiché gli script successivi necessitano dei vari files.
+All'interno dello script files è presente il comando per svolgere l'autenticazione alle API google earth, necessaria per scaricare alcuni dati. La prima si aprirà la pagina per effettuare il login e verrà creata la cartella con il file delle credenziali all'interno del pc dell'utente. Serve anche creare un progetto google cloud (https://console.cloud.google.com/earth-engine/welcome?hl=it) e inserire il nome del progetto nel file config alla variabile project.
 
 Riporto i files caricati e le API usate e i relativi link di riperimento:
 -isole_4326.gpkg, procedimento precedente
@@ -17,11 +18,16 @@ Riporto i files caricati e le API usate e i relativi link di riperimento:
 -PVOUT.tif e PVOUT_month.tif https://datacatalog.worldbank.org/search/dataset/0038641/World---Photovoltaic-Power-Potential--PVOUT--GIS-Data---Global-Solar-Atlas-
 -global_power_density.tif https://datacatalog.worldbank.org/search/dataset/0038643/World---Wind-Speed-and-Power-Density-GIS-Data
 -urban_isl.gpkg https://www.earthdata.nasa.gov/data/catalog/sedac-ciesin-sedac-grumpv1-ext-1.00, necessario creare un account gratuito earthdata
--elevazione
+-urban, https://developers.google.com/earth-engine/datasets/catalog/JRC_GHSL_P2023A_GHS_SMOD_V2-0?hl=it
+-elevazione, https://developers.google.com/earth-engine/datasets/catalog/USGS_GMTED2010_FULL?hl=it
+https://developers.google.com/earth-engine/datasets/catalog/JAXA_ALOS_AW3D30_V3_2?hl=it
 -temperatura, precipitazioni, heating days, cooling days https://developers.google.com/earth-engine/datasets/catalog/ECMWF_ERA5_DAILY, https://developers.google.com/earth-engine/datasets/catalog/ECMWF_ERA5_MONTHLY
 -GDP.tif, https://www.ngdc.noaa.gov/eog/dmsp/download_gdp.html
 -nightlight https://developers.google.com/earth-engine/datasets/catalog/NOAA_VIIRS_DNB_ANNUAL_V22
 -geothermal 
+-protected areas https://developers.google.com/earth-engine/datasets/catalog/WCMC_WDPA_current_polygons?hl=it
+-evi, https://developers.google.com/earth-engine/datasets/catalog/MODIS_061_MOD13A3?hl=it
+-gethermal.gpkg, https://dataservices.gfz-potsdam.de/panmetaworks/showshort.php?id=e6755429-fbbf-11ee-967a-4ffbfe06208e
 
 # Prelavori sulle isole
 

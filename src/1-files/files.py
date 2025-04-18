@@ -4,6 +4,12 @@ import os
 import sys
 from bs4 import BeautifulSoup
 import pickle
+import ee
+
+#svolgere l'autenticazione alle API Google Earth, fatta la prima volta salva l'accesso e crea una cartella config con i token nel pc dell'utente
+#dopo l'autenticazione è necessario creare un progetto google cloud (https://console.cloud.google.com/earth-engine/welcome?hl=it)
+#ed inserire il nome del progetto nel file config.py alla variabile project
+ee.Authenticate()
 
 # cartella in cui si trova lo script
 cartella_corrente = os.path.dirname(os.path.abspath(__file__))

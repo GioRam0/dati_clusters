@@ -14,14 +14,12 @@ cartella_progetto = os.path.join(cartella_corrente, "..", "..")
 isl_path=os.path.join(cartella_progetto, "data/isole_filtrate", "isole_filtrate2_arro2.gpkg")
 gdf = gp.read_file(isl_path)
 
-#credenziali di accesso a API google Earth
 # percorso file config
 percorso_config = os.path.join(cartella_corrente, "..", "config.py")
 sys.path.append(os.path.dirname(percorso_config))
-#importo le variabili config
+#importo la variabile project
 import config
 proj = config.proj
-credentials_path = os.path.join(cartella_corrente, "..", "credentials")
 ee.Initialize(project=proj)
 
 dataset = ee.ImageCollection("MODIS/061/MOD13A3") \
