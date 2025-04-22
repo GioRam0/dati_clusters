@@ -40,11 +40,17 @@ folder_out = os.path.join(cartella_progetto, "files")
 os.makedirs(folder_out, exist_ok=True)
 folder_out1 = os.path.join(folder_out, "PVOUT_month")
 os.makedirs(folder_out1, exist_ok=True)
+folder_out2 = os.path.join(folder_out, "offshore")
+os.makedirs(folder_out1, exist_ok=True)
 
 def download_file(file_id, file_name):
     url = "https://drive.google.com/uc?export=download"
     session = requests.Session()
-    if file_name.startswith("PVOUT_"):
+    if type(file_name)==type([]):
+        folder_new = os.path.join(folder_out2, file_name[0])
+        os.makedirs(folder_new, exist_ok=True)
+        file_path = os.path.join(folder_new, file_name[1])
+    elif file_name.startswith("PVOUT_"):
         file_path = os.path.join(folder_out1, file_name)
     else:
         file_path = os.path.join(folder_out, file_name)

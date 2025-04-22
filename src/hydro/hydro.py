@@ -26,7 +26,7 @@ hydro={}
 #itero per le isole
 k=0
 for i, isola in gdfisl.iterrows():
-    if k%20==0:
+    if k%100==0:
         print(k)
     k+=1
     codice=isola.ALL_Uniq
