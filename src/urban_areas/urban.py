@@ -1,5 +1,5 @@
 #importo librerie
-import geopandas as gpd
+import geopandas as gp
 from shapely.ops import unary_union
 import pickle
 import os
