@@ -1,67 +1,99 @@
 #importo librerie
 import geopandas as gp
-from shapely.ops import unary_union
+import ee
 import pickle
 import os
-import utm
+import sys
 
 # cartella in cui si trova lo script
 cartella_corrente = os.path.dirname(os.path.abspath(__file__))
 cartella_progetto = os.path.join(cartella_corrente, "..", "..")
 
-#importo il file con le aree urbane
-percorso_urban = os.path.join(cartella_progetto, "files", "urban_isl.gpkg")
-gdfurb = gpd.read_file(percorso_urban)
-#applico un buffer nullo per rendere tutte le geometrie valide
-gdfurb.geometry=gdfurb.geometry.buffer(0)
+#importo coordinate isole
+isl_path=os.path.join(cartella_progetto, "data/isole_filtrate", "isole_filtrate2.gpkg")
+gdf = gp.read_file(isl_path)
 
-#funzione che calcola l'area di una figura
-def calcola_area_poligono(figura):
-    lon, lat = figura.centroid.x, figura.centroid.y
-    #individuo la zona utm per usare il sistema di coordinate appropriato, necessario per i calcoli di aree
-    utm_zone = utm.from_latlon(lat, lon)
-    utm_crs = f"EPSG:{32600 + utm_zone[2]}"
-    gf = gp.GeoDataFrame(geometry=[figura], crs="EPSG:4326")
-    gf = gf.to_crs(utm_crs)
-    return gf.area.iloc[0]
+# percorso file config
+percorso_config = os.path.join(cartella_corrente, "..", "config.py")
+sys.path.append(os.path.dirname(percorso_config))
+#importo la variabile project
+import config
+proj = config.proj
+ee.Initialize(project=proj)
 
-#importo le isole
-percorso_isl = os.path.join(cartella_progetto, "data/isole_filtrate", "isole_filtrate2.gpkg")
-gdfisl = gp.read_file(percorso_isl)
-#applico un buffer nullo per rendere tutte le geometrie valide
-gdfisl['geometry']=gdfisl.geometry.buffer(0)
+#importo il dataset e seleziono l'ultima immagine presente, non futura
+urban_collection=ee.ImageCollection("JRC/GHSL/P2023A/GHS_SMOD_V2-0")
+filtered_collection=urban_collection.filterDate('2000-01-01', '2025-01-01')
+sorted_collection=filtered_collection.sort('system:time_start', False)
+urban_image=ee.Image(sorted_collection.first())
+#valori dei pixel urbani
+urban_values = [30, 23, 22]
+image_start = ee.Date(urban_image.get('system:time_start'))
+print(image_start.get('year').getInfo())
+#image_end = ee.Date(urban_image.get('system:time_start'))
+#print(image_end.get('year').getInfo())
 
-#dizionario da riempire con i codici isole come chiavi e le aree urbane delle isole come valori
-urban_areas={}
-#dizionario da riempire con i codici isole come chiavi e la percentuale di aree urbane delle isole come valori
-rel_urban_areas={}
+#se gia presenti (effettuata una precedente run ma interrotta) importo i dati precedentemente scaricati per non ricominciare
+output_folder = os.path.join(cartella_progetto, "data/dati_finali/urban")
+os.makedirs(output_folder, exist_ok=True)
+output_path = os.path.join(output_folder, "urban.pkl")
+if os.path.exists(output_path):
+    with open(output_path, 'rb') as file:
+        urban = pickle.load(file)
+    output_path = os.path.join(cartella_corrente, "urban_rel.pkl")
+    with open(output_path ,  'rb') as file:
+            urban_rel = pickle.load(file)
+#se non presenti inizializzo i dizionari
+else:
+    urban={}
+    urban_rel={}
+
 #itero per le isole
 k=0
-for ind,isl in gdfisl.iterrows():
-    if k%10==0:
+for i,isl in gdf.iterrows():
+    k=0
+for i,isl in gdf.iterrows():
+    if k % 200 == 0:
+        #esportazione periodica per non dover riiniziare da capo in caso di interruzione
         print(k)
+        output_path=os.path.join(output_folder, "urban.pkl")
+        with open(output_path, "wb") as f:
+            pickle.dump(urban, f)
+        output_path=os.path.join(output_folder, "urban_nodata.pkl")
+        with open(output_path, "wb") as f:
+            pickle.dump(urban_rel, f)
     k+=1
     codice=isl.ALL_Uniq
-    area=isl.IslandArea
-    urb=[] 
-    #itero per le aree urbane   
-    for ind1,el1 in gdfurb.iterrows():
-        if el1.geometry.intersects(isl.geometry):
-            urb.append(el1.geometry.intersection(isl.geometry))
-            gdfurb=gdfurb.drop(ind1)
-    if urb!=[]:
-        area_urb=calcola_area_poligono(unary_union(urb))
-        urban_areas[codice]=area_urb
-        rel_urban_areas[codice]=area_urb/(area*10000) #fattore inserito per compensare unita di misura diverse e calcolare una percentuale
-    else:
-        urban_areas[codice]=0
-        rel_urban_areas[codice]=0
+    if codice not in urban:
+        multi=isl.geometry
+        multip_list =[ 
+                [list(vertice) for vertice in poligono.exterior.coords]
+                for poligono in multi.geoms
+            ]   
+        ee_geometry = ee.Geometry.MultiPolygon(multip_list)
+        #calcolo l'area di questa figura
+        area0=ee_geometry.area().getInfo()    
+        #creo una maschera con i pixel urbani e la applico all'immagine ritagliata alla forma dell'isola
+        clipped_image = urban_image.clip(ee_geometry)
+        urban_mask = clipped_image.eq(urban_values[0])
+        urban_mask = urban_mask.Or(clipped_image.eq(urban_values[1]))
+        urban_mask = urban_mask.Or(clipped_image.eq(urban_values[2]))
+        urban_image=clipped_image.updateMask(urban_mask)
+        #estraggo la geometria risultante e ne calcolo la superficie
+        urban_geometry=urban_image.geometry()
+        #calcolo l'area urbana da questa figura
+        urban_area = urban_geometry.area().getInfo()
+        #faccio il rapporto e lo rendo percentuale
+        urban_relative=(urban_area/area0)*100
+        #la trasformo in km2
+        urban_area=urban_area/1000000
+        urban[codice]=urban_area
+        urban_rel[codice]=urban_relative
 
 #esportazione
-percorso_folder_out = os.path.join(cartella_progetto, "data/dati_finali/urban")
-percorso_out = os.path.join(percorso_folder_out, "urban_areas.pkl")
-with open(percorso_out, "wb") as f:
-    pickle.dump(urban_areas, f)
-percorso_out = os.path.join(percorso_folder_out, "urban_areas_rel.pkl")
-with open(percorso_out, "wb") as f:
-    pickle.dump(rel_urban_areas, f)
+output_path=os.path.join(output_folder, "urban_area.pkl")
+with open(output_path, "wb") as f:
+    pickle.dump(urban, f)
+output_path=os.path.join(output_folder, "urban_area_rel.pkl")
+with open(output_path, "wb") as f:
+    pickle.dump(urban_rel, f)

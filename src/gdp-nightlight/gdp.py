@@ -27,7 +27,7 @@ gdp={}
 isola_out={}
 k=0
 for ind,isl in gdf.iterrows():
-    if k%100==0:
+    if k%200==0:
         print(k)
         k+=1
     codice=isl.ALL_Uniq

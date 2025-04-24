@@ -12,7 +12,7 @@ cartella_corrente = os.path.dirname(os.path.abspath(__file__))
 cartella_progetto = os.path.join(cartella_corrente, "..", "..")
 
 # percorso completo per il file .gpkg
-percorso_file = os.path.join(cartella_progetto, "data/isole_filtrate", "isole_filtrate_arro2.gpkg")
+percorso_file = os.path.join(cartella_progetto, "data/isole_filtrate", "isole_filtrate_arro4.gpkg")
 gdf = gp.read_file(percorso_file)
 print(len(gdf))
 
@@ -50,15 +50,16 @@ gdf=gdf[(gdf['Popolazione']>=min_pop) & (gdf['Popolazione']<=max_pop)]
 print(len(gdf))
 
 #esportazione gpkg
-percorso_out = os.path.join(cartella_progetto, "data/isole_filtrate/isole_filtrate2_arro2.gpkg")
+percorso_out = os.path.join(cartella_progetto, "data/isole_filtrate/isole_filtrate2_arro4.gpkg")
 gdf.to_file(percorso_out, driver="GPKG")
 
-#ripeto il filtro ed esporto anche per il file con coordinate non arrotondate
+#ripeto il filtro ed esporto anche per il file con coordinate non arrotondate, piu pesante
 codici=list(gdf.ALL_Uniq)
 # percorso completo per il file .gpkg
 percorso_file = os.path.join(cartella_progetto, "data/isole_filtrate", "isole_filtrate.gpkg")
 gdf = gp.read_file(percorso_file)
 print(len(gdf))
+#elimino le isole se le ho eliminate in precedenza
 for i,isl in gdf.iterrows():
     if isl.ALL_Uniq not in codici:
         gdf=gdf.drop(i)

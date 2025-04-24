@@ -7,12 +7,11 @@ import sys
 
 # cartella in cui si trova lo script
 cartella_corrente = os.path.dirname(os.path.abspath(__file__))
-cartella_progetto = os.path.join(cartella_corrente, "..". "..")
+cartella_progetto = os.path.join(cartella_corrente, "..", "..")
 
 #importo coordinate isole
-isl_path=os.path.join(cartella_progetto, "data/isole_filtrate", "isole_filtrate2_arro2.gpkg")
+isl_path=os.path.join(cartella_progetto, "data/isole_filtrate", "isole_filtrate2_arro4.gpkg")
 gdf = gp.read_file(isl_path)
-multipolygons = gdf.geometry
 
 # percorso file config
 percorso_config = os.path.join(cartella_corrente, "..", "config.py")
@@ -20,7 +19,7 @@ sys.path.append(os.path.dirname(percorso_config))
 #importo la variabile project
 import config
 proj = config.proj
-ee.Initialize(project='proj')
+ee.Initialize(project=proj)
 
 dataset = ee.ImageCollection("ECMWF/ERA5/DAILY") \
     .filterDate("2016-06-01", "2020-05-31")
@@ -29,79 +28,94 @@ def mean_temp(image):
     stats = image.reduceRegion(
         reducer=ee.Reducer.mean(),  # media temperature
         geometry=multip_geo,
-        scale=1000,  # Risoluzione MODIS
         bestEffort=True
     )
     return image.set("mean_temp", stats.get("mean_2m_air_temperature"), "date", image.date().format())
 
-#ripeto il processo a pezzi ed esporto i dati per evitare che un'interruzione mi costringa a ricominciare da zero, riparto da dove ho interrotto
-#nel caso in cui il processo si interrompa si puo far ripartire aggiornando i valori iniziali di a,b,c
-a=0
-b=150
-c=1
-hd=[]
-hd_nod=[]
-cd=[]
-cd_nod=[]
-while b<2442: #valore inserito perche nel file completo il dataframe delle isole filtrate ne contiene 2441, valore da aggiornare per la cartella light
-    if b==2400:
-        b=2441
-    for i in range(a,b):
-        if i % 50 == 0:
-            print(i)
+#se gia presenti (effettuata una precedente run ma interrotta) importo i dati precedentemente scaricati per non ricominciare
+output_folder = os.path.join(cartella_progetto, "data/dati_finali/meteorologici")
+os.makedirs(output_folder, exist_ok=True)
+output_path = os.path.join(output_folder, "hdd.pkl")
+if os.path.exists(output_path):
+    with open(output_path, 'rb') as file:
+            hdd = pickle.load(file)
+    output_path = os.path.join(cartella_corrente, "hdd_nodata.pkl")
+    with open(output_path ,  'rb') as file:
+            hdd_nodata = pickle.load(file)
+    output_path = os.path.join(cartella_corrente, "cdd.pkl")
+    with open(output_path ,  'rb') as file:
+            cdd = pickle.load(file)
+    output_path = os.path.join(cartella_corrente, "cdd_nodata.pkl")
+    with open(output_path ,  'rb') as file:
+            cdd_nodata = pickle.load(file)
+#se non presenti inizializzo i dizionari
+else:
+     hdd={}
+     hdd_nodata={}
+     cdd={}
+     cdd_nodata={}
+
+#itero per le isole
+k=0
+for i,isl in gdf.iterrows():
+    if k % 200 == 0:
+        #esportazione periodica per non dover riiniziare da capo in caso di interruzione
+        print(k)
+        output_path=os.path.join(output_folder, "hdd.pkl")
+        with open(output_path, "wb") as f:
+            pickle.dump(hdd, f)
+        output_path=os.path.join(output_folder, "hdd_nodata.pkl")
+        with open(output_path, "wb") as f:
+            pickle.dump(hdd_nodata, f)
+        output_path=os.path.join(output_folder, "cdd.pkl")
+        with open(output_path, "wb") as f:
+            pickle.dump(cdd, f)
+        output_path=os.path.join(output_folder, "cdd_nodata.pkl")
+        with open(output_path, "wb") as f:
+            pickle.dump(cdd_nodata, f)
+    k+=1
+    codice=isl.ALL_Uniq
+    if codice not in hdd:
+        multi = isl.geometry
         multip_list = [
             [list(vertice) for vertice in poligono.exterior.coords]
-            for poligono in multipolygons[i].geoms
+            for poligono in multi.geoms
         ]
         multip_geo = ee.Geometry.MultiPolygon(multip_list)
-        temp_means = dataset.map(mean_temp)
+        collection=dataset.filetrBounds(multip_geo)
+        temp_means = collection.map(mean_temp)
         #lista con temperature medie giornaliere per il periodo considerato
         mean_list = temp_means.aggregate_array("mean_temp").getInfo()
         if mean_list==[]:
-            hd.append(np.nan)
-            hd_nod.append(1)
-            cd.append(np.nan)
-            cd_nod.append(1)
+            hd[codice]=np.nan
+            hd_nod[codice]=1
+            cd[codice]=np.nan
+            cd_nod[codice]=1
         else:
-            k=0
             k1=0
+            k2=0
             for i in range(len(mean_list)):
-                #291 kelvin corrisponde a 18 celsius, valore per gli heating days
+                #288,291,294,297 in kelvin corrispondono ai valori per gli heating e i cooling days
                 if mean_list[i]<288:
-                    k+=291-mean_list[i]
+                    k1+=291-mean_list[i]
                 if mean_list[i]>297:
-                    k1+=mean_list[i]-294
+                    k2+=mean_list[i]-294
             #valori su 4 anni, divido per 4
-            hd.append(k/4)
-            hd_nod.append(0)
-            cd.append(k1/4)
-            cd_nod.append(0)
-    #esportazione delle singole librerie
-    percorso_folder_mete = os.path.join(cartella_progetto, "data/dati_finali/meteorologici")
-    percorso_folder_out = os.path.join(percorso_folder_mete, "hd")
-    os.makedirs(percorso_folder_out, exist_ok=True)
-    percorso_file = os.path.join(percorso_folder_out, f"hd{c}")
-    with open(percorso_file, "w") as file_txt:
-        for elemento in hd:
-            file_txt.write(str(elemento) + "\n")
-    percorso_folder_out = os.path.join(percorso_folder_mete, "hd_nod")
-    os.makedirs(percorso_folder_out, exist_ok=True)
-    percorso_file = os.path.join(percorso_folder_out, f"hd_nod{c}")
-    with open(percorso_file, "w") as file_txt:
-        for elemento in hd_nod:
-            file_txt.write(str(elemento) + "\n")
-    percorso_folder_out = os.path.join(percorso_folder_mete, "cd")
-    os.makedirs(percorso_folder_out, exist_ok=True)
-    percorso_file = os.path.join(percorso_folder_out, f"cd{c}")
-    with open(percorso_file, "w") as file_txt:
-        for elemento in cd:
-            file_txt.write(str(elemento) + "\n")
-    percorso_folder_out = os.path.join(percorso_folder_mete, "cd_nod")
-    os.makedirs(percorso_folder_out, exist_ok=True)
-    percorso_file = os.path.join(percorso_folder_out, f"cd_nod{c}")
-    with open(percorso_file, "w") as file_txt:
-        for elemento in cd_nod:
-            file_txt.write(str(elemento) + "\n")
-    a+=150
-    b+=150
-    c+=1
+            hd[codice]=k1/4
+            hd_nod[codice]=0
+            cd[codice]=k2/4
+            cd_nod[codice]=0
+
+#esportazione finale
+output_path=os.path.join(output_folder, "hdd.pkl")
+with open(output_path, "wb") as f:
+    pickle.dump(hdd, f)
+output_path=os.path.join(output_folder, "hdd_nodata.pkl")
+with open(output_path, "wb") as f:
+    pickle.dump(hdd_nodata, f)
+output_path=os.path.join(output_folder, "cdd.pkl")
+with open(output_path, "wb") as f:
+    pickle.dump(cdd, f)
+output_path=os.path.join(output_folder, "cdd_nodata.pkl")
+with open(output_path, "wb") as f:
+    pickle.dump(cdd_nodata, f)

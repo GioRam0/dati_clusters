@@ -8,7 +8,7 @@ cartella_corrente = os.path.dirname(os.path.abspath(__file__))
 cartella_progetto = os.path.join(cartella_corrente, "..", "..")
 
 #importo le isole
-percorso_isl = os.path.join(cartella_progetto, "data/isole_filtrate", "isole_filtrate2_arro2.gpkg")
+percorso_isl = os.path.join(cartella_progetto, "data/isole_filtrate", "isole_filtrate2.gpkg")
 gdfisl = gp.read_file(percorso_isl)
 
 #importo siti idroelettrici

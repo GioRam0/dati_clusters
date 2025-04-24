@@ -25,8 +25,10 @@ def buffer_isl(multi):
     crs_m = CRS.from_epsg(utm_crs)
     transformer_dir = Transformer.from_crs(crs_4326, crs_m, always_xy=True)
     transformer_inv = Transformer.from_crs(crs_m, crs_4326, always_xy=True)
+    #funzione di conversione delle coordinate
     project_to_utm = lambda x, y: transformer_dir.transform(x, y)
     project_to_wgs84 = lambda x, y: transformer_inv.transform(x, y)
+    #trasformo, applico il buffer e riconverto
     multi_utm = transform(project_to_utm, multi)
     buffer_utm = multi_utm.buffer(20000)
     multi_4326=transform(project_to_wgs84, buffer_utm)
@@ -38,6 +40,7 @@ for i,isl in gdf.iterrows():
     if k%200==0:
         print(k)
     k+=1
+    #calcolo il buffer, per le isole al bordo le lascio in 4326
     if isl.ALL_Uniq in lista:
         gdf.loc[i,'geometry']=gdf.loc[i,'geometry'].buffer(0.18)
     else:

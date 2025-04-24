@@ -14,7 +14,7 @@ gdf = gp.read_file(percorso_file)
 
 #funzione che arrotonda a due cifre decimali le coordinate dei vari punti
 def arrotonda(poligono):
-    vertici_arrotondati=[(round(x, 2), round(y, 2)) for x, y in poligono.exterior.coords]
+    vertici_arrotondati=[(round(x, 4), round(y, 4)) for x, y in poligono.exterior.coords]
     return(Polygon(vertici_arrotondati))
 #funzione che elimina elementi duplicati dalla lista dei vertici di un poligono
 #se in questo modo rimangono solo due punti restituisce 0 poichè non si può costruire un poligono con due vertici
@@ -48,5 +48,5 @@ for i,isl in gdf.iterrows():
     #imposto la geometria dell'isola come il multipoligono creato dalla lista di poligoni appena generata
     gdf.loc[i,'geometry']=MultiPolygon(poligoni)
 #esportazione gpkg
-percorso_out = os.path.join(cartella_progetto, "data/isole_filtrate/isole_filtrate_arro2.gpkg")
+percorso_out = os.path.join(cartella_progetto, "data/isole_filtrate/isole_filtrate_arro4.gpkg")
 gdf.to_file(percorso_out, driver="GPKG")

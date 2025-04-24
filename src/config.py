@@ -1,5 +1,5 @@
 MIN_SUPERFICIE = 3
-MAX_SUPERFICIE = 60000
+MAX_SUPERFICIE = 100000
 
 MIN_POPOLAZIONE = 200
 MAX_POPOLAZIONE = 600000
@@ -7,7 +7,7 @@ MAX_POPOLAZIONE = 600000
 FILES = {
     "1lKAvoPMYCid4AtNq3ZRzxef-TdSoJTKX" : "isole_4326.gpkg" ,
     "15HBJ3ZKbjRzj-oyP9U-Gdk-8-KHSofkj" : "geothermal_potential.gpkg",
-    "1cnPzc1fy_gaTVS9_Rn8_njC-AzztJv8G" : "PVOUT.tif" ,
+    "1cnPzc1fy_gaTVS9_Rn8_njC-AzztJv8G" : "PVOUT_year.tif" ,
     "1ieyOvUeqGKecSXrAyeglvZNT4JFbBReG" : "popolazione.tif" ,
     "19fjhD2KyChnA218ZqOQ1DXSMLDiIFwcr" : "PVOUT_.01tif" ,
     "1qZw9f0ILBZwfyC_l9tTvFoYcxlOHqJ0U" : "PVOUT_.02tif" ,
@@ -21,10 +21,7 @@ FILES = {
     "1qsgUlsm59KkYEHF7TsxG6uTS238pbaow" : "PVOUT_.10tif" ,
     "1GTE2H6kvDdvoyWFfkp_w9k6kSQabsXEb" : "PVOUT_.11tif" ,
     "1ohBmGbiNdufaF_iB4NzUN45F4Vad3RZq" : "PVOUT_12.tif" ,
-    "1vCVki3mrX8L-ym57Cjk4BG9nu5UJwoJ8" : "urban_isl.gokg",
-    "1nkDF5RHibPC_uy0G3SAKqp8SC-ECMTT0" : "global_power_dens.tif",
     "1fp9e6hX_M3CvKE2Ok_lccBwIIhFs8yC4" : "GDP.tif",
-    "1TeuGEcqVDavRIcxU4sdeGiqJ9Ltda5qf" : "geothermal_potential.gpkg",
     "1ZUEKfhvKRuxEF3TmUEfDpkABSr30tsJs" : ["eap","FixedFoundationd.cpg"],
     "1VM9i1Zjnbe0xgEX0yzFpfzD5-XhWX2lk" : ["eap","FixedFoundationd.dbf"],
     "1kUC4yWy4qSdieXD8taYDm0hCaMLbk8V2" : ["eap","FixedFoundationd.prj"],
@@ -97,8 +94,5 @@ FILES = {
     "1lXmc_wInAwg5q9cXvitwrp6OuauY6w7x" : ["ssa","FloatingFoundationd.shp"],
     "1o3NjE0W1ZrTayf_cg-PW_a_SyoWnINND" : ["ssa","FloatingFoundationd.shx"]
 }
-
-START_DATE = "2023-12-01"
-END_DATE = "2023-12-31"
 
 proj='ee-giorgioramundo99'

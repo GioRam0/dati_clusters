@@ -83,6 +83,7 @@ def funzione(stringa):
         poli1=Polygon(lista_punti1)
         poli2=Polygon(lista_punti2)
         gdf1.loc[10482,'geometry']=MultiPolygon([poli1,poli2])
+
     if stringa=="eap\FloatingFoundation.shp":
         lista_indici=[5271,6073,6124,6137,6405]
         for i in lista_indici:
@@ -112,6 +113,7 @@ def funzione(stringa):
                         lista_poli[k]=Polygon(lista_punti1)
                         lista_poli.append(Polygon(lista_punti2))
                 gdf1.loc[i,'geometry']=MultiPolygon(lista_poli)
+
     #elimino delle geometrie degenerate che non saprei come sistemare
     if stringa==r"na\FloatingFoundation.shp":
         lista_indici=[176,180]
@@ -141,6 +143,7 @@ def funzione(stringa):
                         #traduzione se necessaria
                         if country in traduttore_nomi_nazioni:
                             country=traduttore_nomi_nazioni[country]
+                        #due files hanno le colonne con titolo diverso
                         if stringa == r"na\FloatingFoundation.shp" or stringa == "sa\FloatingFoundation.shp":
                             if country == shape.TERRITORY1 or country == shape.SOVEREIGN1:
                                 a=True
@@ -155,12 +158,12 @@ def funzione(stringa):
                         #aggiungo l'indice alla lista della shape
                         gdf1.loc[h,'isole_associate'].append(i)
     #itero per le varie shapes offshore
-    ha=0
+    cont=0
     print(len(gdf1))
     for j,shape in gdf1.iterrows():
-        if ha%100==0:
-            print(ha)
-        ha+=1
+        if cont%100==0:
+            print(cont)
+        cont+=1
         indici_isole=shape.isole_associate
         if indici_isole != []:
             #calcolo l'area della shape offshore
@@ -176,6 +179,7 @@ def funzione(stringa):
             area_unione=calcola_area_poligono(unione_isole)
             #calcolo la potenza totale per le isole come rapporto tra area dell'unione e area della shape moltiplicata per tutta la potenza installabile
             pot_isole=shape.InstallCap*(area_unione/area_shape)
+            #se le isole associate sono una o due ripartisco manualmente la potenza senza applicare la maschera per risparmiare calcoli
             if len(indici_isole)==1:
                 codice=gdf.loc[indici_isole[0],'ALL_Uniq']
                 offshore[codice]+=pot_isole
@@ -194,6 +198,7 @@ def funzione(stringa):
                 #rifare con coordinate utm, anche da sopra volendo
                 minx, miny, maxx, maxy = unione_isole.bounds
                 res = 10 #risoluzione in metri
+                #con isole grandi altrimenti diventa troppo lungo
                 if area_shape>1000000:
                     res=20
                 if area_shape>5000000:
