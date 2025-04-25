@@ -23,7 +23,7 @@ import config
 #dizionario con gli ID dei files nella cartella drive e il nome che devono avere nella cartella di destinazione
 files = config.FILES
 #lista dei files già scaricati
-file_pkl=os.path.join(cartella_corrente,"downloaded_files.pkl")
+file_pkl=os.path.join(cartella_progetto, "files", "downloaded_files.pkl")
 if os.path.exists(file_pkl):
     try:
         with open(file_pkl, 'rb') as file:
@@ -34,6 +34,7 @@ if os.path.exists(file_pkl):
         downloaded_files = []
 else:
     downloaded_files=[]
+downloaded_files.remove("15HBJ3ZKbjRzj-oyP9U-Gdk-8-KHSofkj")
 print(downloaded_files)
 
 folder_out = os.path.join(cartella_progetto, "files")

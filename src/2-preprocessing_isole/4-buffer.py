@@ -13,7 +13,7 @@ isl_path=os.path.join(cartella_progetto, "data/isole_filtrate", "isole_filtrate2
 gdf = gp.read_file(isl_path)
 
 #lista ALL_Uniq di isole troppo vicine ai bordi 180, -180. applicando il buffer in coordinate utm e riconvertendo in 4326 il poligono diventerebbe una striscia. applico un buffer direttamente in 4326
-lista=[292365,282309,277208, 274415, 282454,274143,344028,277249,274142,347209,347210,344026]
+lista=[292365,282309,277208, 277037, 277204, 274415, 282454,274143,344028,277249,274142,347209,347210,344026]
 
 crs_4326 = CRS.from_epsg(4326)
 #funzione per generare il buffer
@@ -30,19 +30,20 @@ def buffer_isl(multi):
     project_to_wgs84 = lambda x, y: transformer_inv.transform(x, y)
     #trasformo, applico il buffer e riconverto
     multi_utm = transform(project_to_utm, multi)
-    buffer_utm = multi_utm.buffer(20000)
+    buffer_utm = multi_utm.buffer(30000)
     multi_4326=transform(project_to_wgs84, buffer_utm)
     return multi_4326
 
+print('lunghezza del file:')
 print(len(gdf))
 k=0
 for i,isl in gdf.iterrows():
-    if k%200==0:
+    if k%300==0:
         print(k)
     k+=1
     #calcolo il buffer, per le isole al bordo le lascio in 4326
     if isl.ALL_Uniq in lista:
-        gdf.loc[i,'geometry']=gdf.loc[i,'geometry'].buffer(0.18)
+        gdf.loc[i,'geometry']=gdf.loc[i,'geometry'].buffer(0.27)
     else:
         gdf.loc[i,'geometry']=buffer_isl(gdf.loc[i,'geometry'])
 

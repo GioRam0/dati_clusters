@@ -14,6 +14,7 @@ cartella_progetto = os.path.join(cartella_corrente, "..", "..")
 # percorso completo per il file .gpkg
 percorso_file = os.path.join(cartella_progetto, "data/isole_filtrate", "isole_filtrate_arro4.gpkg")
 gdf = gp.read_file(percorso_file)
+print('lunghezza file originale:')
 print(len(gdf))
 
 #importo file con dati popolazione,ha copertura globale
@@ -26,7 +27,7 @@ gdf['Densità_pop']=np.zeros(len(gdf))
 
 k=0
 for i,isl in gdf.iterrows(): #itero per le isole
-    if k%100==0:
+    if k%500==0:
         print(k)
     k+=1
     multip=isl.geometry
@@ -47,6 +48,7 @@ min_pop = config.MIN_POPOLAZIONE
 max_pop = config.MAX_POPOLAZIONE
 #filtro
 gdf=gdf[(gdf['Popolazione']>=min_pop) & (gdf['Popolazione']<=max_pop)]
+print('lunghezza file dopo il filtro:')
 print(len(gdf))
 
 #esportazione gpkg

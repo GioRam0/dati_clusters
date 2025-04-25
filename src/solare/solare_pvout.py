@@ -13,7 +13,7 @@ cartella_progetto = os.path.join(cartella_corrente, "..", "..")
 
 #importo dati solari
 #annuali
-percorso_file= os.path.join(cartella_progetto, "files", "PVOUT.tif")
+percorso_file= os.path.join(cartella_progetto, "files", "PVOUT-year.tif")
 src = rasterio.open(percorso_file)
 #mensili
 for i in range(1,13):

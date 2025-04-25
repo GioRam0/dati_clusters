@@ -6,16 +6,18 @@ import pickle
 import os
 import sys
 
+#vedi i dataset
 # cartella in cui si trova lo script
 cartella_corrente = os.path.dirname(os.path.abspath(__file__))
-cartella_progetto = os.path.join(cartella_corrente, "..", "..")
+cartella_progetto = os.path.join(cartella_corrente, "..", "..", "..")
 
 #importo coordinate isole
 isl_path=os.path.join(cartella_progetto, "data/isole_filtrate", "isole_filtrate_arro4.gpkg")
 gdf = gp.read_file(isl_path)
+gdf=gdf[(gdf['IslandArea'])<100000]
 
 # percorso file config
-percorso_config = os.path.join(cartella_corrente, "..", "config.py")
+percorso_config = os.path.join(cartella_corrente, "..", "..", "config.py")
 sys.path.append(os.path.dirname(percorso_config))
 #importo la variabile project
 import config
@@ -23,8 +25,8 @@ proj = config.proj
 ee.Initialize(project=proj)
 
 #scelgo il dataset e seleziono diversi anni per ridurre la varianza
-dataset=ee.ImageCollection("JAXA/GCOM-C/L3/LAND/LST/V1")
-dataset=dataset.filterDate("2019-06-01", "2020-05-31")
+dataset=ee.ImageCollection("MODIS/061/MOD21C3")
+dataset=dataset.filterDate("2022-01-01", "2024-12-31")
 
 #ultima data disponibile
 #sorted_collection = dataset.sort('system:time_start', False)
@@ -82,8 +84,8 @@ for i,isl in gdf.iterrows():
             for poligono in multipoli.geoms
         ]
         multip_geo = ee.Geometry.MultiPolygon(multip_list)
-        
-        temp2_means = dataset.map(mean_temp2)
+        collection=dataset.filterBounds(multip_geo)
+        temp2_means = collection.map(mean_temp2)
         mean_list1 = temp2_means.aggregate_array("mean_temp2").getInfo()
         if mean_list1==[]:
             temp2[codice]=np.nan

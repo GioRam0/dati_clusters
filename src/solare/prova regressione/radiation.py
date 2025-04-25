@@ -8,15 +8,15 @@ import sys
 
 # cartella in cui si trova lo script
 cartella_corrente = os.path.dirname(os.path.abspath(__file__))
-cartella_progetto = os.path.join(cartella_corrente, "..", "..")
+cartella_progetto = os.path.join(cartella_corrente, "..", "..", "..")
 
 #importo coordinate isole
 isl_path=os.path.join(cartella_progetto, "data/isole_filtrate", "isole_filtrate_arro4.gpkg")
 gdf = gp.read_file(isl_path)
-gdf=gdf[(gdf['IslandArea']<10000)]
+gdf=gdf[(gdf['IslandArea']<30000)]
 
 # percorso file config
-percorso_config = os.path.join(cartella_corrente, "..", "config.py")
+percorso_config = os.path.join(cartella_corrente, "..", "..", "config.py")
 sys.path.append(os.path.dirname(percorso_config))
 #importo la variabile project
 import config
@@ -24,8 +24,9 @@ proj = config.proj
 ee.Initialize(project=proj)
 
 #scelgo il dataset e seleziono diversi anni per ridurre la varianza
-dataset=ee.ImageCollection("ECMWF/ERA5_LAND/MONTHLY_AGGR")
+dataset=ee.ImageCollection("ECMWF/ERA5_LAND/MONTHLY_AGGR").select(["surface_latent_heat_flux_sum", "surface_net_solar_radiation_sum", "surface_solar_radiation_downwards_sum", "surface_net_thermal_radiation_sum", "surface_thermal_radiation_downwards_sum"])
 dataset=dataset.filterDate("2024-01-01", "2024-12-31")
+
 
 #ultima data disponibile
 #sorted_collection = dataset.sort('system:time_start', False)
@@ -41,7 +42,7 @@ def mean_heat(image):
     stats = image.reduceRegion(
         reducer=ee.Reducer.mean(),
         geometry=multip_geo,
-        scale=1000,  # Risoluzione MODIS
+        scale=10000,  # Risoluzione MODIS
         bestEffort=True
     )
     return image.set("mean_heat", stats.get("surface_latent_heat_flux_sum"), "date", image.date().format())
@@ -49,7 +50,7 @@ def mean_rad(image):
     stats = image.reduceRegion(
         reducer=ee.Reducer.mean(),
         geometry=multip_geo,
-        scale=1000,  # Risoluzione MODIS
+        scale=10000,  # Risoluzione MODIS
         bestEffort=True
     )
     return image.set("mean_rad", stats.get("surface_net_solar_radiation_sum"), "date", image.date().format())
@@ -57,7 +58,7 @@ def mean_down(image):
     stats = image.reduceRegion(
         reducer=ee.Reducer.mean(),
         geometry=multip_geo,
-        scale=1000,  # Risoluzione MODIS
+        scale=10000,  # Risoluzione MODIS
         bestEffort=True
     )
     return image.set("mean_down", stats.get("surface_solar_radiation_downwards_sum"), "date", image.date().format())
@@ -65,7 +66,7 @@ def mean_ther(image):
     stats = image.reduceRegion(
         reducer=ee.Reducer.mean(),
         geometry=multip_geo,
-        scale=1000,  # Risoluzione MODIS
+        scale=10000,  # Risoluzione MODIS
         bestEffort=True
     )
     return image.set("mean_ther", stats.get("surface_net_thermal_radiation_sum"), "date", image.date().format())
@@ -73,7 +74,7 @@ def mean_trd(image):
     stats = image.reduceRegion(
         reducer=ee.Reducer.mean(),
         geometry=multip_geo,
-        scale=1000,  # Risoluzione MODIS
+        scale=10000,  # Risoluzione MODIS
         bestEffort=True
     )
     return image.set("mean_trd", stats.get("surface_thermal_radiation_downwards_sum"), "date", image.date().format())
@@ -180,8 +181,8 @@ for i,isl in gdf.iterrows():
             #temperatura espressa in kelvin
             heat[codice]=np.mean(mean_list1)-273
             heat_nodata[codice]=0
-    
-        rad_means = dataset.map(mean_rad)
+        collection=dataset.filterBounds(multip_geo)
+        rad_means = collection.map(mean_rad)
         mean_list2 = rad_means.aggregate_array("mean_rad").getInfo()
         if mean_list2==[]:
             rad[codice]=np.nan

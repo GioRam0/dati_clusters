@@ -31,11 +31,12 @@ def poligono_semplificato(poligono):
     poligono_arrotondato=arrotonda(poligono)
     poligonosemplificato=rimuovi(poligono_arrotondato)
     return poligonosemplificato
-
+print('lunghezza del file:')
+print(len(gdf))
 k=0
 #itero per le isole
 for i,isl in gdf.iterrows():
-    if k%100==0:
+    if k%500==0:
         print(k)
     k+=1
     multi_originale=isl.geometry

@@ -16,12 +16,14 @@ file_path=os.path.join(cartella_progetto, 'files', 'GDP.tif')
 src = rasterio.open(file_path)
 
 #importo coordinate isole
-file_path=os.path.join(cartella_progetto, 'data/isole_filtrate', 'isole_filtrate2_arro2ext.gpkg')
+file_path=os.path.join(cartella_progetto, 'data/isole_filtrate', 'isole_filtrate2_arro4.gpkg')
 gdf = gp.read_file(file_path)
+print(len(gdf))
 
 bounds = box(*src.bounds)
 #dizionario da riempire con i codici come chiavi e gdp delle isole come valori
 gdp={}
+gdp_procapite={}
 #dizionario da riempire con codici come chiavi e una lista composta da due elementi binari come valori
 #il primo elemento mi dice se l'isola è completamente fuori dai bordi del file, il secondo se una sua parte lo è
 isola_out={}
@@ -29,13 +31,14 @@ k=0
 for ind,isl in gdf.iterrows():
     if k%200==0:
         print(k)
-        k+=1
+    k+=1
     codice=isl.ALL_Uniq
     multip=isl.geometry
     #isola fuori completamente bordi
     if multip.disjoint(bounds):
         isola_out[codice]=[1,1]
         gdp[codice]=np.nan
+        gdp_procapite[codice]=np.nan
     else:
         #isola completamente dentro i bordi
         if multip.within(bounds):
@@ -48,13 +51,17 @@ for ind,isl in gdf.iterrows():
         valid_pixels = out_image[out_image != no_data_value]
         sum = np.sum(valid_pixels)
         gdp[codice]=sum
+        gdp_procapite[codice]=sum/isl.Popolazione
 
 #esportazione
-folder_path=os.path.join(cartella_progetto, 'data/data_finali/gdp_nightlight')
-os.makedirs(percorso_folder_out, exist_ok=True)
+folder_path=os.path.join(cartella_progetto, 'data/dati_finali/gdp_nightlight')
+os.makedirs(folder_path, exist_ok=True)
 file_path=os.path.join(folder_path, "gdp.pkl")
 with open(file_path, "wb") as f:
-    pickle.dump(elevazioni, f)
+    pickle.dump(gdp, f)
+file_path=os.path.join(folder_path, 'gdp_procapite.pkl')
+with open(file_path, "wb") as f:
+    pickle.dump(gdp_procapite, f)
 file_path=os.path.join(folder_path, 'gdp_nodata.pkl')
 with open(file_path, "wb") as f:
     pickle.dump(isola_out, f)

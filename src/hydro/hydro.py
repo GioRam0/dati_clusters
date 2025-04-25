@@ -2,6 +2,7 @@
 import geopandas as gp
 import os
 from rtree import index
+import pickle
 
 # cartella in cui si trova lo script
 cartella_corrente = os.path.dirname(os.path.abspath(__file__))
@@ -16,17 +17,23 @@ percorso_hydro = os.path.join(cartella_progetto, "files", "hydro.gpkg")
 gdfh = gp.read_file(percorso_hydro)
 
 #indice per facilitare le ricerca dei punti contenuti
+print(len(gdfh))
 idx = index.Index()
+k=0
 for i, row in gdfh.iterrows():
+    if k%100000==0:
+        print(k)
+    k+=1
     bbox = row.geometry.bounds
     idx.insert(i, bbox)
 
 #dizionario che associa ai codici delle isola la somma delle potenze dei siti che contengono
 hydro={}
 #itero per le isole
+print(len(gdfisl))
 k=0
 for i, isola in gdfisl.iterrows():
-    if k%100==0:
+    if k%200==0:
         print(k)
     k+=1
     codice=isola.ALL_Uniq
