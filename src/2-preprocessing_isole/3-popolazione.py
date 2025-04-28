@@ -56,8 +56,6 @@ percorso_out = os.path.join(cartella_progetto, "data/isole_filtrate/isole_filtra
 gdf.to_file(percorso_out, driver="GPKG")
 
 #ripeto il filtro ed esporto anche per il file con coordinate non arrotondate, piu pesante
-codici=list(gdf.ALL_Uniq)
-# percorso completo per il file .gpkg
 percorso_file = os.path.join(cartella_progetto, "data/isole_filtrate", "isole_filtrate.gpkg")
 gdf = gp.read_file(percorso_file)
 print(len(gdf))
@@ -66,7 +64,31 @@ for i,isl in gdf.iterrows():
     if isl.ALL_Uniq not in codici:
         gdf=gdf.drop(i)
 print(len(gdf))
-
 #esportazione gpkg
 percorso_out = os.path.join(cartella_progetto, "data/isole_filtrate/isole_filtrate2.gpkg")
+gdf.to_file(percorso_out, driver="GPKG")
+
+#ripeto il filtro ed esporto anche per il file con coordinate arrotondate a due e tre cifre decimali
+percorso_file = os.path.join(cartella_progetto, "data/isole_filtrate", "isole_filtrate_arro3.gpkg")
+gdf = gp.read_file(percorso_file)
+print(len(gdf))
+#elimino le isole se le ho eliminate in precedenza
+for i,isl in gdf.iterrows():
+    if isl.ALL_Uniq not in codici:
+        gdf=gdf.drop(i)
+print(len(gdf))
+#esportazione gpkg
+percorso_out = os.path.join(cartella_progetto, "data/isole_filtrate/isole_filtrate2_arro3.gpkg")
+gdf.to_file(percorso_out, driver="GPKG")
+
+percorso_file = os.path.join(cartella_progetto, "data/isole_filtrate", "isole_filtrate_arro2.gpkg")
+gdf = gp.read_file(percorso_file)
+print(len(gdf))
+#elimino le isole se le ho eliminate in precedenza
+for i,isl in gdf.iterrows():
+    if isl.ALL_Uniq not in codici:
+        gdf=gdf.drop(i)
+print(len(gdf))
+#esportazione gpkg
+percorso_out = os.path.join(cartella_progetto, "data/isole_filtrate/isole_filtrate2_arro2.gpkg")
 gdf.to_file(percorso_out, driver="GPKG")

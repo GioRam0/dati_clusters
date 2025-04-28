@@ -11,7 +11,7 @@ cartella_corrente = os.path.dirname(os.path.abspath(__file__))
 cartella_progetto = os.path.join(cartella_corrente, "..", "..")
 
 #importo coordinate isole
-isl_path=os.path.join(cartella_progetto, "data/isole_filtrate", "isole_filtrate2_arro4.gpkg")
+isl_path=os.path.join(cartella_progetto, "data/isole_filtrate", "isole_filtrate2_arro3.gpkg")
 gdf = gp.read_file(isl_path)
 
 # percorso file config
@@ -55,17 +55,17 @@ def mean_prec(image):
 #se gia presenti (effettuata una precedente run ma interrotta) importo i dati precedentemente scaricati per non ricominciare
 output_folder = os.path.join(cartella_progetto, "data/dati_finali/meteorologici")
 os.makedirs(output_folder, exist_ok=True)
-output_path = os.path.join(output_folder, "temp.pkl")
+output_path = os.path.join(output_folder, "prec.pkl")
 if os.path.exists(output_path):
     with open(output_path, 'rb') as file:
             temp = pickle.load(file)
-    output_path = os.path.join(cartella_corrente, "temp_nodata.pkl")
+    output_path = os.path.join(output_folder, "temp_nodata.pkl")
     with open(output_path ,  'rb') as file:
             temp_nodata = pickle.load(file)
-    output_path = os.path.join(cartella_corrente, "prec.pkl")
+    output_path = os.path.join(output_folder, "prec.pkl")
     with open(output_path ,  'rb') as file:
             prec = pickle.load(file)
-    output_path = os.path.join(cartella_corrente, "prec_nodata.pkl")
+    output_path = os.path.join(output_folder, "prec_nodata.pkl")
     with open(output_path ,  'rb') as file:
             prec_nodata = pickle.load(file)
 #se non presenti inizializzo i dizionari
@@ -75,12 +75,15 @@ else:
     prec={}
     prec_nodata={}
 
+gdf=gdf.sort_values(by='IslandArea', ascending=False)
+
 #itero per le isole
 k=0
 for i,isl in gdf.iterrows():
-    if k % 200 == 0:
+    if k % 10 == 0:
+        if k % 100 == 0:
+            print(k)
         #esportazione periodica per non dover riiniziare da capo in caso di interruzione
-        print(k)
         output_path=os.path.join(output_folder, "temp.pkl")
         with open(output_path, "wb") as f:
             pickle.dump(temp, f)
@@ -95,46 +98,44 @@ for i,isl in gdf.iterrows():
             pickle.dump(prec_nodata, f)
     k+=1
     codice=isl.ALL_Uniq
-    if codice not in temp:
+    if codice not in prec:
         multipoli=isl.geometry
         multip_list = [
             [list(vertice) for vertice in poligono.exterior.coords]
             for poligono in multipoli.geoms
         ]
         multip_geo = ee.Geometry.MultiPolygon(multip_list)
-        collection=dataset.filetrBounds(multip_geo)
+        collection=dataset.filterBounds(multip_geo)
         temp_means = collection.map(mean_temp)
         mean_list1 = temp_means.aggregate_array("mean_temp").getInfo()
         if mean_list1==[]:
             temp[codice]=np.nan
-            isl_nodt[codice]=1
+            temp_nodata[codice]=1
         else:
             #temperatura espressa in kelvin
             temp[codice]=np.mean(mean_list1)-273
-            isl_nodt[codice]=0
+            temp_nodata[codice]=0
     
-        prec_means = dataset.map(mean_prec)
+        prec_means = collection.map(mean_prec)
         mean_list2 = prec_means.aggregate_array("mean_prec").getInfo()
         if mean_list2==[]:
             prec[codice]=np.nan
-            isl_nodp[codice]=1
+            prec_nodata[codice]=1
         else:
             #faccio la media sui quattro anni
             prec[codice]=(np.sum(mean_list2))/4
-            isl_nodp[codice]=0
+            prec_nodata[codice]=0
 
 #esportazione
-percorso_folder_out = os.path.join(cartella_progetto, "data/dati_finali/meteorologici")
-os.makedirs(percorso_folder_out, exist_ok=True)
-percorso_file=os.path.join(percorso_folder_out, "temp.pkl")
+percorso_file=os.path.join(output_folder, "temp.pkl")
 with open(percorso_file, "wb") as f:
     pickle.dump(temp, f)
-percorso_file=os.path.join(percorso_folder_out, "temp_nodata.pkl")
+percorso_file=os.path.join(output_folder, "temp_nodata.pkl")
 with open(percorso_file, "wb") as f:
-    pickle.dump(isl_nodt, f)
-percorso_file=os.path.join(percorso_folder_out, "annual_precipitation.pkl")
+    pickle.dump(temp_nodata, f)
+percorso_file=os.path.join(output_folder, "prec.pkl")
 with open(percorso_file, "wb") as f:
     pickle.dump(prec, f)
-percorso_file=os.path.join(percorso_folder_out, "prec_nodata.pkl")
+percorso_file=os.path.join(output_folder, "prec_nodata.pkl")
 with open(percorso_file, "wb") as f:
-    pickle.dump(isl_nodp, f)
+    pickle.dump(prec_nodata, f)

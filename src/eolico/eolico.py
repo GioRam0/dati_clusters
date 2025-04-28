@@ -5,6 +5,7 @@ import ee
 import pickle
 import os
 import sys
+from shapely import MultiPolygon, Polygon
 
 # cartella in cui si trova lo script
 cartella_corrente = os.path.dirname(os.path.abspath(__file__))
@@ -36,7 +37,7 @@ dataset1=dataset1.select(['u_component_of_wind_10m','v_component_of_wind_10m'])
 #last_date = datetime.datetime.fromtimestamp(timestamp_ms/1000.0)
 #print(last_date)
 
-dataset=dataset.filterDate("2021-04-01", "2025-03-31")
+dataset=dataset.filterDate("2016-07-01", "2020-06-30")
 dataset1=dataset1.filterDate("2016-07-01", "2020-06-30")
 
 #funzione per aggiungere una banda con cubo della velocita del vento, proporzionale alla sua potenza
@@ -61,8 +62,9 @@ def dev_std(collection):
     for i in range(1,13):
         #seleziono solo le immagini di un mese e calcolo la potenza media
         collection_month=collection.filter(ee.Filter.calendarRange(i, i, 'month'))
-        print(collection_month.size().getInfo())
-        mean_list = power_means.aggregate_array("mean_power").getInfo()
+        #calcolo la media del wind_power tra i vari pixel e li listo
+        power_means_month=collection_month.map(mean_power)
+        mean_list = power_means_month.aggregate_array("mean_power").getInfo()
         power_list.append(np.mean(mean_list))
     #calcolo la devizione standard delle potenze medie mensili
     deviazione_standard=np.std(power_list)
@@ -87,12 +89,16 @@ else:
     eolico_nodata={}
     std={}
 
+gdf=gdf.sort_values(by='IslandArea', ascending=False)
+
 #itero per le isole
 k=0
 for i,isl in gdf.iterrows():
-    if k % 200 == 0:
+    if k % 1 == 0:
+        if k%1==0:
+            print(k)
+            print(isl.IslandArea)
         #esportazione periodica per non dover riiniziare da capo in caso di interruzione
-        print(k)
         output_path=os.path.join(output_folder, "eolico.pkl")
         with open(output_path, "wb") as f:
             pickle.dump(eolico, f)
@@ -105,26 +111,38 @@ for i,isl in gdf.iterrows():
     k+=1
     codice=isl.ALL_Uniq
     if codice not in eolico:
-        multipoli=isl.geometry
+        #semplifico le geometrie troppo grandi
+        if isl.IslandArea>10000:
+            simpli=isl.geometry.simplify(tolerance=0.005, preserve_topology=True)
+            if type(simpli) is MultiPolygon:
+                multi=simpli
+            if type(simpli) is Polygon:
+                multi=MultiPolygon([simpli])
+        elif isl.IslandArea>5000:
+            simpli=isl.geometry.simplify(tolerance=0.003, preserve_topology=True)
+            if type(simpli) is MultiPolygon:
+                multi=simpli
+            if type(simpli) is Polygon:
+                multi=MultiPolygon([simpli])
+        elif isl.IslandArea>2000:
+            simpli=isl.geometry.simplify(tolerance=0.002, preserve_topology=True)
+            if type(simpli) is MultiPolygon:
+                multi=simpli
+            if type(simpli) is Polygon:
+                multi=MultiPolygon([simpli])
+        else:
+            simpli=isl.geometry.simplify(tolerance=0.001, preserve_topology=True)
+            if type(simpli) is MultiPolygon:
+                multi=simpli
+            if type(simpli) is Polygon:
+                multi=MultiPolygon([simpli])
         multip_list = [
             [list(vertice) for vertice in poligono.exterior.coords]
-            for poligono in multipoli.geoms
+            for poligono in multi.geoms
         ]
         multip_geo = ee.Geometry.MultiPolygon(multip_list)
-    #clippo le immagini per il poligono e aggiungo banda wind_power
-    collection=dataset.filterBounds(multip_geo)
-    power_collection=collection.map(wind_power)
-    #calcolo la media del wind_power tra i vari pixel e li listo
-    power_means=power_collection.map(mean_power)
-    mean_list = power_means.aggregate_array("mean_power").getInfo()
-    if len(mean_list)>0:
-        eolico[codice]=np.mean(mean_list)
-        eolico_nodata[codice]=0
-        std[codice]=dev_std(power_collection)
-    #se l'isola non è coperta in era5-land provo con era5
-    else:
         #clippo le immagini per il poligono e aggiungo banda wind_power
-        collection=dataset1.filterBounds(multip_geo)
+        collection=dataset.filterBounds(multip_geo)
         power_collection=collection.map(wind_power)
         #calcolo la media del wind_power tra i vari pixel e li listo
         power_means=power_collection.map(mean_power)
@@ -132,12 +150,24 @@ for i,isl in gdf.iterrows():
         if len(mean_list)>0:
             eolico[codice]=np.mean(mean_list)
             eolico_nodata[codice]=0
-            std[codice]=dev_std(power_means)
-        #non ho modo di trovare i dati
+            std[codice]=dev_std(power_collection)
+        #se l'isola non è coperta in era5-land provo con era5
         else:
-            eolico[codice]=np.nan
-            eolico_nodata[codice]=1
-            std[codice]=np.nan
+            #clippo le immagini per il poligono e aggiungo banda wind_power
+            collection=dataset1.filterBounds(multip_geo)
+            power_collection=collection.map(wind_power)
+            #calcolo la media del wind_power tra i vari pixel e li listo
+            power_means=power_collection.map(mean_power)
+            mean_list = power_means.aggregate_array("mean_power").getInfo()
+            if len(mean_list)>0:
+                eolico[codice]=np.mean(mean_list)
+                eolico_nodata[codice]=0
+                std[codice]=dev_std(power_means)
+            #non ho modo di trovare i dati
+            else:
+                eolico[codice]=np.nan
+                eolico_nodata[codice]=1
+                std[codice]=np.nan
 
 #esportazione
 output_path=os.path.join(output_folder, "eolico.pkl")
@@ -149,3 +179,20 @@ with open(output_path, "wb") as f:
 output_path=os.path.join(output_folder, "eolico_std.pkl")
 with open(output_path, "wb") as f:
     pickle.dump(std, f)
+#k=0
+#a=0
+#for i,isl in gdf.ietrrows():
+#    if k%100==0:
+#        print(k)
+#    k+=1
+#    codice=isl.ALL_Uniq
+#    if codice not in eolico:
+#        print('eolico')
+#    if codice not in eolico_nodata:
+#        print('nodata')
+#    else:
+#        if eolico_nodata[codice]==1:
+#            a+=1
+#    if codice not in std:
+#        print(std)
+#print(a)

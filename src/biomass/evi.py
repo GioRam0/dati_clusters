@@ -5,14 +5,14 @@ import ee
 import pickle
 import os
 import sys
+from shapely import MultiPolygon
 
 # cartella in cui si trova lo script
 cartella_corrente = os.path.dirname(os.path.abspath(__file__))
 cartella_progetto = os.path.join(cartella_corrente, "..", "..")
 
 #importo coordinate isole
-#isl_path=os.path.join(cartella_progetto, "data/isole_filtrate", "isole_filtrate2_arro4.gpkg")
-isl_path=os.path.join(cartella_progetto, "data/isole_filtrate", "isole_filtrate_arro4.gpkg")
+isl_path=os.path.join(cartella_progetto, "data/isole_filtrate", "isole_filtrate2_arro3.gpkg")
 gdf = gp.read_file(isl_path)
 
 # percorso file config
@@ -61,9 +61,10 @@ else:
 #itero per le isole
 k=0
 for ind,isl in gdf.iterrows(): #itero per le isole
-    if k % 100 == 0:
+    if k % 10 == 0:
+        if k%100 ==0:
+            print(k)
         #esportazione periodica per non dover riiniziare da capo in caso di interruzione
-        print(k)
         output_path=os.path.join(output_folder, "evi.pkl")
         with open(output_path, "wb") as f:
             pickle.dump(evi, f)
@@ -73,7 +74,15 @@ for ind,isl in gdf.iterrows(): #itero per le isole
     k+=1
     codice=isl.ALL_Uniq
     if codice not in evi:
-        multipoli=isl.geometry
+        #semplifico le geometrie troppo grandi, eccessivo payload
+        if isl.IslandArea>15000:
+            simpli=isl.geometry.simplify(tolerance=0.005, preserve_topology=True)
+            if type(simpli) is MultiPolygon:
+                multi=simpli
+            if type(simpli) is Polygon:
+                multi=MultiPolygon([simpli])
+        else:
+            multipoli=isl.geometry
         multip_list = [
             [list(vertice) for vertice in poligono.exterior.coords]
             for poligono in multipoli.geoms
@@ -86,7 +95,6 @@ for ind,isl in gdf.iterrows(): #itero per le isole
         evi_list = evi_means.aggregate_array("mean_evi").getInfo()
         if evi_list==[]:
             evi[codice]=np.nan
-            evi_nodata[codice]=1
         else:
             #calcolo la media sui vari mesi
             evi[codice]=np.mean(evi_list)
@@ -98,4 +106,4 @@ with open(output_path, "wb") as f:
     pickle.dump(evi, f)
 output_path=os.path.join(output_folder, "evi_nodata.pkl")
 with open(output_path, "wb") as f:
-    pickle.dump(isl_nod, f)
+    pickle.dump(evi_nodata, f)
