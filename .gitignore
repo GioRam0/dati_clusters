@@ -2,5 +2,6 @@ envlight/
 data/isole_filtrate
 files/
 src/1-files/downloaded_files.pkl/
+exploratory_data_analysis/risultati/
 
 __pycache__/

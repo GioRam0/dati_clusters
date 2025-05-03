@@ -5,7 +5,7 @@ import ee
 import pickle
 import os
 import sys
-from shapely import MultiPolygon
+from shapely import MultiPolygon, Polygon
 
 # cartella in cui si trova lo script
 cartella_corrente = os.path.dirname(os.path.abspath(__file__))
@@ -53,8 +53,7 @@ else:
 gdf=gdf.sort_values(by='IslandArea', ascending=False)
 
 #itero per le isole
-k=0
-for i,isl in gdf.iterrows():
+for k, (i, isl) in enumerate(gdf.iterrows(), 1):
     if k % 10 == 0:
         #esportazione periodica per non dover riiniziare da capo in caso di interruzione
         if k%100 == 0:
@@ -65,15 +64,14 @@ for i,isl in gdf.iterrows():
         output_path=os.path.join(output_folder, "urban_area_rel.pkl")
         with open(output_path, "wb") as f:
             pickle.dump(urban_rel, f)
-    k+=1
     codice=isl.ALL_Uniq
     if codice not in urban:
         #semplifico le geometrie troppo grandi, o complicate
         if isl.IslandArea>30000 or isl.ALL_Uniq == 273837:
             simpli=isl.geometry.simplify(tolerance=0.005, preserve_topology=True)
-            if type(simpli) is MultiPolygon:
+            if isinstance(simpli, MultiPolygon):
                 multipoli=simpli
-            if type(simpli) is Polygon:
+            if isinstance(simpli, Polygon):
                 multipoli=MultiPolygon([simpli])
         else:
             multipoli=isl.geometry

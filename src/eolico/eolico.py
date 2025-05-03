@@ -92,12 +92,10 @@ else:
 gdf=gdf.sort_values(by='IslandArea', ascending=False)
 
 #itero per le isole
-k=0
-for i,isl in gdf.iterrows():
-    if k % 1 == 0:
-        if k%1==0:
+for k, (i, isl) in enumerate(gdf.iterrows(), 1):
+    if k % 10 == 0:
+        if k%100==0:
             print(k)
-            print(isl.IslandArea)
         #esportazione periodica per non dover riiniziare da capo in caso di interruzione
         output_path=os.path.join(output_folder, "eolico.pkl")
         with open(output_path, "wb") as f:
@@ -108,34 +106,21 @@ for i,isl in gdf.iterrows():
         output_path=os.path.join(output_folder, "eolico_std.pkl")
         with open(output_path, "wb") as f:
             pickle.dump(std, f)
-    k+=1
     codice=isl.ALL_Uniq
     if codice not in eolico:
         #semplifico le geometrie troppo grandi
         if isl.IslandArea>10000:
             simpli=isl.geometry.simplify(tolerance=0.005, preserve_topology=True)
-            if type(simpli) is MultiPolygon:
-                multi=simpli
-            if type(simpli) is Polygon:
-                multi=MultiPolygon([simpli])
         elif isl.IslandArea>5000:
             simpli=isl.geometry.simplify(tolerance=0.003, preserve_topology=True)
-            if type(simpli) is MultiPolygon:
-                multi=simpli
-            if type(simpli) is Polygon:
-                multi=MultiPolygon([simpli])
         elif isl.IslandArea>2000:
             simpli=isl.geometry.simplify(tolerance=0.002, preserve_topology=True)
-            if type(simpli) is MultiPolygon:
-                multi=simpli
-            if type(simpli) is Polygon:
-                multi=MultiPolygon([simpli])
         else:
             simpli=isl.geometry.simplify(tolerance=0.001, preserve_topology=True)
-            if type(simpli) is MultiPolygon:
-                multi=simpli
-            if type(simpli) is Polygon:
-                multi=MultiPolygon([simpli])
+        if isinstance(simpli, MultiPolygon):
+            multi=simpli
+        if isinstance(simpli, Polygon):
+            multi=MultiPolygon([simpli])
         multip_list = [
             [list(vertice) for vertice in poligono.exterior.coords]
             for poligono in multi.geoms
@@ -179,20 +164,3 @@ with open(output_path, "wb") as f:
 output_path=os.path.join(output_folder, "eolico_std.pkl")
 with open(output_path, "wb") as f:
     pickle.dump(std, f)
-#k=0
-#a=0
-#for i,isl in gdf.ietrrows():
-#    if k%100==0:
-#        print(k)
-#    k+=1
-#    codice=isl.ALL_Uniq
-#    if codice not in eolico:
-#        print('eolico')
-#    if codice not in eolico_nodata:
-#        print('nodata')
-#    else:
-#        if eolico_nodata[codice]==1:
-#            a+=1
-#    if codice not in std:
-#        print(std)
-#print(a)

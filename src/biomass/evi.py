@@ -5,7 +5,7 @@ import ee
 import pickle
 import os
 import sys
-from shapely import MultiPolygon
+from shapely import MultiPolygon, Polygon
 
 # cartella in cui si trova lo script
 cartella_corrente = os.path.dirname(os.path.abspath(__file__))
@@ -59,8 +59,7 @@ else:
     evi_nodata={}
 
 #itero per le isole
-k=0
-for ind,isl in gdf.iterrows(): #itero per le isole
+for k, (i, isl) in enumerate(gdf.iterrows(), 1):
     if k % 10 == 0:
         if k%100 ==0:
             print(k)
@@ -71,15 +70,14 @@ for ind,isl in gdf.iterrows(): #itero per le isole
         output_path=os.path.join(output_folder, "evi_nodata.pkl")
         with open(output_path, "wb") as f:
             pickle.dump(evi_nodata, f)
-    k+=1
     codice=isl.ALL_Uniq
     if codice not in evi:
         #semplifico le geometrie troppo grandi, eccessivo payload
         if isl.IslandArea>15000:
             simpli=isl.geometry.simplify(tolerance=0.005, preserve_topology=True)
-            if type(simpli) is MultiPolygon:
+            if isinstance(simpli, MultiPolygon):
                 multi=simpli
-            if type(simpli) is Polygon:
+            if isinstance(simpli, Polygon):
                 multi=MultiPolygon([simpli])
         else:
             multipoli=isl.geometry

@@ -35,7 +35,7 @@ def mean_temp(image):
     return image.set("mean_temp", stats.get("mean_2m_air_temperature"), "date", image.date().format())
 
 #se gia presenti (effettuata una precedente run ma interrotta) importo i dati precedentemente scaricati per non ricominciare
-output_folder = os.path.join(cartella_progetto, "data/dati_finali/meteorologici")
+output_folder = os.path.join(cartella_progetto, "data/dati_finali/metereologici")
 os.makedirs(output_folder, exist_ok=True)
 output_path = os.path.join(output_folder, "hdd.pkl")
 if os.path.exists(output_path):
@@ -60,8 +60,7 @@ else:
 gdf=gdf.sort_values(by='IslandArea', ascending=False)
 
 #itero per le isole
-k=0
-for i,isl in gdf.iterrows():
+for k, (i, isl) in enumerate(gdf.iterrows(), 1):
     if k % 10 == 0:
         if k % 100 == 0:
             print(k)
@@ -78,34 +77,21 @@ for i,isl in gdf.iterrows():
         output_path=os.path.join(output_folder, "cdd_nodata.pkl")
         with open(output_path, "wb") as f:
             pickle.dump(cdd_nodata, f)
-    k+=1
     codice=isl.ALL_Uniq
     if codice not in hdd:
         #semplifico le geometrie troppo grandi
         if isl.IslandArea>10000:
             simpli=isl.geometry.simplify(tolerance=0.005, preserve_topology=True)
-            if type(simpli) is MultiPolygon:
-                multi=simpli
-            if type(simpli) is Polygon:
-                multi=MultiPolygon([simpli])
         elif isl.IslandArea>5000:
             simpli=isl.geometry.simplify(tolerance=0.003, preserve_topology=True)
-            if type(simpli) is MultiPolygon:
-                multi=simpli
-            if type(simpli) is Polygon:
-                multi=MultiPolygon([simpli])
         elif isl.IslandArea>2000:
             simpli=isl.geometry.simplify(tolerance=0.002, preserve_topology=True)
-            if type(simpli) is MultiPolygon:
-                multi=simpli
-            if type(simpli) is Polygon:
-                multi=MultiPolygon([simpli])
         else:
             simpli=isl.geometry.simplify(tolerance=0.001, preserve_topology=True)
-            if type(simpli) is MultiPolygon:
-                multi=simpli
-            if type(simpli) is Polygon:
-                multi=MultiPolygon([simpli])
+        if isinstance(simpli, MultiPolygon):
+            multi=simpli
+        if isinstance(simpli, Polygon):
+            multi=MultiPolygon([simpli])
         multip_list = [
             [list(vertice) for vertice in poligono.exterior.coords]
             for poligono in multi.geoms

@@ -24,6 +24,8 @@ https://developers.google.com/earth-engine/datasets/catalog/JAXA_ALOS_AW3D30_V3_
 -GDP.tif, https://www.ngdc.noaa.gov/eog/dmsp/download_gdp.html
 -nightlights https://developers.google.com/earth-engine/datasets/catalog/NOAA_VIIRS_DNB_ANNUAL_V22
 -protected areas https://developers.google.com/earth-engine/datasets/catalog/WCMC_WDPA_current_polygons?hl=it
+-elevazione, https://developers.google.com/earth-engine/datasets/catalog/JAXA_ALOS_AW3D30_V3_2?hl=it
+-copertura terreni, https://developers.google.com/earth-engine/datasets/catalog/COPERNICUS_Landcover_100m_Proba-V-C3_Global?hl=it
 -evi, https://developers.google.com/earth-engine/datasets/catalog/MODIS_061_MOD13A3?hl=it
 -geothermal_potential.gpkg, https://dataservices.gfz-potsdam.de/panmetaworks/showshort.php?id=e6755429-fbbf-11ee-967a-4ffbfe06208e
 -hydro.gpkg, https://data.4tu.nl/articles/dataset/Global_potential_hydropower_locations/12708413
@@ -40,6 +42,7 @@ I dati in questione sono presentati in formato GEOTIFF e sono un'elaborazione di
 
 # Dati eolico (da riscrivere e aggiungere offshore)
 Raccolti dal dataset ERA5-Land e, in caso questo non coprisse l'isola, dal dataset ERA5, entrambi prodotti da Copernicus, programma di osservazione spaziale dell'UE. Per ogni isola è stata considerata la media del cubo della velocità del vento, grandezza proporzionale alla potenza del vento stesso. Sono stati considerati anche i mesi singolarmente per calcolare la deviazione standard della media mensile di questa grandezza, per lo stesso motivo del fotovoltaico.
+Per l'offshore gli shapefiles sono realizzati da IRENA e fanno una stima della potenza installabile in una regione tenendo conto dei fondali e della potenza del vento. L'analisi svolta associa ogni isola alla nazione/nazioni che la contiene/contengono e, nel caso fosse contenuta in una zona offshore appartenente alla stessa nazione associa all'isola una frazione della potenza della shape in questione.
 
 # Superficie urbana
 Dati scaricati dal GHSL, progetto finanziato dall'UE, mediante le API Google Earth. Il dataset associa a ogni pixel un valore in base alla densità urbana calcolata.
@@ -63,6 +66,7 @@ Il file scaricabile dal link consiste in un file .xlsx. Dopo aver eliminato dell
 Il file scaricabile al link è in formato .shp. Anche in questo caso è stato aperto in QGIS, convertito in gpkg e ne è stat calcolata l'intersezione con le isole al fine di considerare solo i siti rilevanti al progetto e allegerire il file.
 
 # % superficie RES e elevazione
-I dati sono stati scaricati dai dataset WDPA: World Database on Protected Areas, GMTED2010: Global Multi-resolution Terrain Elevation Data 2010 e Copernicus Global Land Cover Layers: CGLS-LC100 Collection 3 tramite le API Google Earth. Lo script elimina le aree non agibili per realizzare impianti rinnovabili quali corpi acquatici, zone protette, zone con altitudine o pendenza elevata. Lo script calcola anche l'elevazione massima di ogni isola.
+I dati sono stati scaricati dai dataset WDPA: World Database on Protected Areas, ALOS DSM: Global 30m v3.2 e Copernicus Global Land Cover Layers: CGLS-LC100 Collection 3 tramite le API Google Earth. Lo script elimina le aree non agibili per realizzare impianti rinnovabili quali corpi acquatici, zone protette, zone con altitudine o pendenza elevata. Lo script calcola anche l'elevazione massima di ogni isola.
+
 
 Nella cartella \data\dati_finali ho caricato i files .pkl finali, ottenuti tramite la run dei vari script.

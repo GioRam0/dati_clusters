@@ -53,9 +53,9 @@ def mean_prec(image):
     return image.set("mean_prec", stats.get("total_precipitation"), "date", image.date().format())
 
 #se gia presenti (effettuata una precedente run ma interrotta) importo i dati precedentemente scaricati per non ricominciare
-output_folder = os.path.join(cartella_progetto, "data/dati_finali/meteorologici")
+output_folder = os.path.join(cartella_progetto, "data/dati_finali/metereologici")
 os.makedirs(output_folder, exist_ok=True)
-output_path = os.path.join(output_folder, "prec.pkl")
+output_path = os.path.join(output_folder, "temp.pkl")
 if os.path.exists(output_path):
     with open(output_path, 'rb') as file:
             temp = pickle.load(file)
@@ -78,11 +78,11 @@ else:
 gdf=gdf.sort_values(by='IslandArea', ascending=False)
 
 #itero per le isole
-k=0
-for i,isl in gdf.iterrows():
+for k, (i, isl) in enumerate(gdf.iterrows(), 1):
     if k % 10 == 0:
         if k % 100 == 0:
             print(k)
+            print(isl.IslandArea)
         #esportazione periodica per non dover riiniziare da capo in caso di interruzione
         output_path=os.path.join(output_folder, "temp.pkl")
         with open(output_path, "wb") as f:
@@ -96,7 +96,6 @@ for i,isl in gdf.iterrows():
         output_path=os.path.join(output_folder, "prec_nodata.pkl")
         with open(output_path, "wb") as f:
             pickle.dump(prec_nodata, f)
-    k+=1
     codice=isl.ALL_Uniq
     if codice not in prec:
         multipoli=isl.geometry
@@ -115,6 +114,7 @@ for i,isl in gdf.iterrows():
             #temperatura espressa in kelvin
             temp[codice]=np.mean(mean_list1)-273
             temp_nodata[codice]=0
+        print(temp[codice])
     
         prec_means = collection.map(mean_prec)
         mean_list2 = prec_means.aggregate_array("mean_prec").getInfo()
