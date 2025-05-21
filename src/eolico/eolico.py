@@ -12,7 +12,7 @@ cartella_corrente = os.path.dirname(os.path.abspath(__file__))
 cartella_progetto = os.path.join(cartella_corrente, "..", "..")
 
 #importo coordinate isole
-isl_path=os.path.join(cartella_progetto, "data/isole_filtrate", "isole_filtrate2_arro4.gpkg")
+isl_path=os.path.join(cartella_progetto, "data/isole_filtrate/finali", "isole_arro4.gpkg")
 gdf = gp.read_file(isl_path)
 
 # percorso file config
@@ -30,13 +30,14 @@ dataset1=ee.ImageCollection("ECMWF/ERA5/DAILY")
 dataset1=dataset1.select(['u_component_of_wind_10m','v_component_of_wind_10m'])
 
 #ultima data disponibile
-#sorted_collection = dataset1.sort('system:time_start', False)
-#last_image = sorted_collection.first()
-#timestamp_ms = last_image.get('system:time_start').getInfo()
-#import datetime
-#last_date = datetime.datetime.fromtimestamp(timestamp_ms/1000.0)
-#print(last_date)
+sorted_collection = dataset1.sort('system:time_start', False)
+last_image = sorted_collection.first()
+timestamp_ms = last_image.get('system:time_start').getInfo()
+import datetime
+last_date = datetime.datetime.fromtimestamp(timestamp_ms/1000.0)
+print(f"data dell'ultima image: {last_date}")
 
+#scelgo il periodo di 4 anni piu recente
 dataset=dataset.filterDate("2016-07-01", "2020-06-30")
 dataset1=dataset1.filterDate("2016-07-01", "2020-06-30")
 
@@ -51,7 +52,7 @@ def wind_power(image):
 #funzione per calcolare la potenza media
 def mean_power(image):
     stats = image.reduceRegion(
-        reducer=ee.Reducer.mean(),  # media potenze
+        reducer=ee.Reducer.mean(),
         geometry=multip_geo,
         bestEffort=True
     )
@@ -90,12 +91,12 @@ else:
     std={}
 
 gdf=gdf.sort_values(by='IslandArea', ascending=False)
-
+print(f'isole da svolgere {len(gdf)}')
 #itero per le isole
 for k, (i, isl) in enumerate(gdf.iterrows(), 1):
+    if k%100==0 or k==len(gdf):
+        print(f'{k} isole svolte')
     if k % 10 == 0:
-        if k%100==0:
-            print(k)
         #esportazione periodica per non dover riiniziare da capo in caso di interruzione
         output_path=os.path.join(output_folder, "eolico.pkl")
         with open(output_path, "wb") as f:

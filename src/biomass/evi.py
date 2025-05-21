@@ -12,7 +12,7 @@ cartella_corrente = os.path.dirname(os.path.abspath(__file__))
 cartella_progetto = os.path.join(cartella_corrente, "..", "..")
 
 #importo coordinate isole
-isl_path=os.path.join(cartella_progetto, "data/isole_filtrate", "isole_filtrate2_arro3.gpkg")
+isl_path=os.path.join(cartella_progetto, "data/isole_filtrate/finali", "isole_arro4.gpkg")
 gdf = gp.read_file(isl_path)
 
 # percorso file config
@@ -26,18 +26,19 @@ ee.Initialize(project=proj)
 #seleziono il dataset e filtro su due anni
 dataset = ee.ImageCollection("MODIS/061/MOD13A3")
 #ultima data disponibile
-#sorted_collection = dataset.sort('system:time_start', False)
-#last_image = sorted_collection.first()
-#timestamp_ms = last_image.get('system:time_start').getInfo()
-#import datetime
-#last_date = datetime.datetime.fromtimestamp(timestamp_ms/1000.0)
-#print(last_date)
-dataset=dataset.filterDate("2023-01-01", "2024-12-31")
+sorted_collection = dataset.sort('system:time_start', False)
+last_image = sorted_collection.first()
+timestamp_ms = last_image.get('system:time_start').getInfo()
+import datetime
+last_date = datetime.datetime.fromtimestamp(timestamp_ms/1000.0)
+print(f"data dell'ultima immagine: {last_date}")
+#seleziono due anni per ridurre variazioni o anomalie di un singolo anno
+dataset=dataset.filterDate("2022-01-01", "2024-12-31")
 
 #funzione che somma tutti i valori dei pixel all'interno del poligono
 def mean_evi(image):
     stats = image.reduceRegion(
-        reducer=ee.Reducer.sum(),  # Somma i valori EVI
+        reducer=ee.Reducer.mean(),
         geometry=multip_geo,
         bestEffort=True
     )
@@ -58,11 +59,12 @@ else:
     evi={}
     evi_nodata={}
 
+print(f'isole da svolgere: {len(gdf)}')
 #itero per le isole
 for k, (i, isl) in enumerate(gdf.iterrows(), 1):
+    if k%100 ==0 or k==len(gdf):
+        print(f'{k} isole svolte')
     if k % 10 == 0:
-        if k%100 ==0:
-            print(k)
         #esportazione periodica per non dover riiniziare da capo in caso di interruzione
         output_path=os.path.join(output_folder, "evi.pkl")
         with open(output_path, "wb") as f:
@@ -93,6 +95,7 @@ for k, (i, isl) in enumerate(gdf.iterrows(), 1):
         evi_list = evi_means.aggregate_array("mean_evi").getInfo()
         if evi_list==[]:
             evi[codice]=np.nan
+            evi_nodata[codice]=1
         else:
             #calcolo la media sui vari mesi
             evi[codice]=np.mean(evi_list)

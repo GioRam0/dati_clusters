@@ -22,6 +22,7 @@ sys.path.append(os.path.dirname(percorso_config))
 import config
 #dizionario con gli ID dei files nella cartella drive e il nome che devono avere nella cartella di destinazione
 files = config.FILES
+
 #lista dei files già scaricati
 file_pkl=os.path.join(cartella_progetto, "files", "downloaded_files.pkl")
 if os.path.exists(file_pkl):
@@ -34,9 +35,8 @@ if os.path.exists(file_pkl):
         downloaded_files = []
 else:
     downloaded_files=[]
-downloaded_files.remove("15HBJ3ZKbjRzj-oyP9U-Gdk-8-KHSofkj")
-print(downloaded_files)
 
+#cartelle in cui inserire i files
 folder_out = os.path.join(cartella_progetto, "files")
 os.makedirs(folder_out, exist_ok=True)
 folder_out1 = os.path.join(folder_out, "PVOUT_month")
@@ -44,9 +44,11 @@ os.makedirs(folder_out1, exist_ok=True)
 folder_out2 = os.path.join(folder_out, "offshore")
 os.makedirs(folder_out1, exist_ok=True)
 
+#funzione per scaricare i files
 def download_file(file_id, file_name):
     url = "https://drive.google.com/uc?export=download"
     session = requests.Session()
+    #scelta della cartella output
     if type(file_name)==type([]):
         folder_new = os.path.join(folder_out2, file_name[0])
         os.makedirs(folder_new, exist_ok=True)
@@ -56,8 +58,11 @@ def download_file(file_id, file_name):
     else:
         file_path = os.path.join(folder_out, file_name)
     try:
+        #download dei files
+        print(f'inizio download {file_name}')
         response = session.get(url, params={"id": file_id}, stream=True, allow_redirects=True)
         response.raise_for_status()
+        #nel caso il file è troppo grande occorre avviare il download da un bottone che comparirebbe se si fosse aperta la pagina di warning
         if "Virus scan warning" in response.text:
             soup = BeautifulSoup(response.text, 'html.parser')
             download_form = soup.find('form', {'id': 'download-form'})
@@ -80,6 +85,7 @@ def download_file(file_id, file_name):
                 for chunk in response.iter_content(chunk_size=8192):
                     f.write(chunk)
             print(f"File scaricato con successo come: {file_name}")
+        #aggiungo il file al dizionario dei files scaricati
         downloaded_files.append(file_id)
     except requests.exceptions.RequestException as e:
         print(f"Errore durante il download: {e}")
@@ -95,6 +101,7 @@ if len(files)==len(downloaded_files):
     print('Tutti i files sono stati scaricati correttamente')
 else:
     print('Non tutti i files sono stati scaricati correttamente, rilanciare lo script.')
+
 #aggiorno gli elementi scaricati
 with open(file_pkl, "wb") as f:
     pickle.dump(downloaded_files, f)

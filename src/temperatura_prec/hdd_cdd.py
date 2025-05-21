@@ -12,7 +12,7 @@ cartella_corrente = os.path.dirname(os.path.abspath(__file__))
 cartella_progetto = os.path.join(cartella_corrente, "..", "..")
 
 #importo coordinate isole
-isl_path=os.path.join(cartella_progetto, "data/isole_filtrate", "isole_filtrate2_arro3.gpkg")
+isl_path=os.path.join(cartella_progetto, "data/isole_filtrate/finali", "isole_arro3.gpkg")
 gdf = gp.read_file(isl_path)
 
 # percorso file config
@@ -23,8 +23,16 @@ import config
 proj = config.proj
 ee.Initialize(project=proj)
 
-dataset = ee.ImageCollection("ECMWF/ERA5/DAILY") \
-    .filterDate("2016-06-01", "2020-05-31")
+dataset = ee.ImageCollection("ECMWF/ERA5/DAILY")
+#ultima data disponibile
+sorted_collection = dataset.sort('system:time_start', False)
+last_image = sorted_collection.first()
+timestamp_ms = last_image.get('system:time_start').getInfo()
+import datetime
+last_date = datetime.datetime.fromtimestamp(timestamp_ms/1000.0)
+print(f"data dell'ultima immagine:{last_date}")
+dataset=dataset.filterDate("2016-06-01", "2020-05-31")
+
 #media tutti i valori dei pixel all'interno del poligono
 def mean_temp(image):
     stats = image.reduceRegion(
@@ -57,13 +65,12 @@ else:
      cdd={}
      cdd_nodata={}
 
-gdf=gdf.sort_values(by='IslandArea', ascending=False)
-
+print(f'isole da analizzare: {len(gdf)}')
 #itero per le isole
 for k, (i, isl) in enumerate(gdf.iterrows(), 1):
+    if k % 100 == 0 or k==len(gdf):
+        print(f'{k} isole analizzate')
     if k % 10 == 0:
-        if k % 100 == 0:
-            print(k)
         #esportazione periodica per non dover riiniziare da capo in caso di interruzione
         output_path=os.path.join(output_folder, "hdd.pkl")
         with open(output_path, "wb") as f:

@@ -2,11 +2,13 @@ MIN_SUPERFICIE = 3
 MAX_SUPERFICIE = 100000
 
 MIN_POPOLAZIONE = 200
-MAX_POPOLAZIONE = 600000
+MAX_POPOLAZIONE = 1000000
 
+#aggiungere file placche continentali
 FILES = {
-    "1lKAvoPMYCid4AtNq3ZRzxef-TdSoJTKX" : "isole_4326.gpkg" ,
-    "1j-NFoD8uy2kYV2hRz_n4PZ5asg2dhK-X" : "geothermal_potential.gpkg",
+    "1lKAvoPMYCid4AtNq3ZRzxef-TdSoJTKX" : "isole_4326.gpkg",
+    "1ayojeFO69awJuZsB7oRrAwd5DpLrNEgI" : "continents.gpkg",
+    "1b7Vv0JmzfqWrp-zzoly1foBdAGRynMjm": "geothermal_potential.gpkg",
     "1cnPzc1fy_gaTVS9_Rn8_njC-AzztJv8G" : "PVOUT-year.tif" ,
     "1ieyOvUeqGKecSXrAyeglvZNT4JFbBReG" : "popolazione.tif" ,
     "19fjhD2KyChnA218ZqOQ1DXSMLDiIFwcr" : "PVOUT_01.tif" ,
@@ -21,8 +23,8 @@ FILES = {
     "1qsgUlsm59KkYEHF7TsxG6uTS238pbaow" : "PVOUT_10.tif" ,
     "1GTE2H6kvDdvoyWFfkp_w9k6kSQabsXEb" : "PVOUT_11.tif" ,
     "1ohBmGbiNdufaF_iB4NzUN45F4Vad3RZq" : "PVOUT_12.tif" ,
-    "1fp9e6hX_M3CvKE2Ok_lccBwIIhFs8yC4" : "GDP.tif",
-    "1y_KXH0jgc__HHNh_RNAKKbQyAJG_HWaw" : "hydro.gpkg",
+    "19Us7Js3eEnK7qY5TFktr5Xq2yXBsYr9d" : "gdp_2020.tif",
+    "1oEDpwVb3dAGTlHuzooXkSuUWWVQYBY3A" : "hydro.gpkg",
     "1ZUEKfhvKRuxEF3TmUEfDpkABSr30tsJs" : ["eap","FixedFoundation.cpg"],
     "1VM9i1Zjnbe0xgEX0yzFpfzD5-XhWX2lk" : ["eap","FixedFoundation.dbf"],
     "1kUC4yWy4qSdieXD8taYDm0hCaMLbk8V2" : ["eap","FixedFoundation.prj"],

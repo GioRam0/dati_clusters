@@ -12,26 +12,24 @@ cartella_progetto = os.path.join(cartella_corrente, "..", "..")
 #importo isole e file siti geotermici
 percorso_file = os.path.join(cartella_progetto, "files", "geothermal_potential.gpkg")
 dfgeo = gp.read_file(percorso_file)
-percorso_file = os.path.join(cartella_progetto, "data/isole_filtrate", "isole_filtrate2.gpkg")
+percorso_file = os.path.join(cartella_progetto, "data/isole_filtrate/finali", "isole.gpkg")
 dfisl = gp.read_file(percorso_file)
-percorso_file = os.path.join(cartella_progetto, "data/isole_filtrate", "isole_buffer.gpkg")
+percorso_file = os.path.join(cartella_progetto, "data/isole_filtrate/finali", "isole_buffer.gpkg")
 dfbuf = gp.read_file(percorso_file)
-
-#aggiungere colonna geom buf
 
 #dizionario con codici come chiavi e somma potenziali geotermici come valori
 geotherm={elemento: 0 for elemento in list(dfisl.ALL_Uniq)}
 #dizionario che assegna al nome di un sito geotermico l'isola cui è stato associato
 geotherm1={}
 
-k=0
+print(f'isole da svolgere: {len(dfisl)}')
 #itero per le isole
-for index_isl, isola in dfisl.iterrows():
-    if k%100==0:
-        print(k)
-    k+=1
+for k,(index_isl, isola) in enumerate(dfisl.iterrows(), 1):
+    if k%100==0 or k==len(dfisl):
+        print(f'{k} isole svolte')
     multi=isola.geometry
     codice=isola.ALL_Uniq
+    #geometria con buffer presa dalláltro dataframe
     buffer=dfbuf[dfbuf['ALL_Uniq'] == codice].iloc[0]['geometry']
     for index_geo, punto_geo in dfgeo.iterrows(): #itero i punti geotermici
         punto=punto_geo.geometry
@@ -40,6 +38,10 @@ for index_isl, isola in dfisl.iterrows():
             #la potenza del sito si trova in una colonna denominata q ed è una stringa con la virgola come separatore decimale
             #sostituisco la virgola con un punto e trasformo la stringa in un float
             a=float(punto_geo.q.replace(",", "."))
+            #se il punto è stato già associato a un'altra isola perché contenuto nel suo buffer elimino questa associazione. Il punto appartiene all'isola che lo contiene durettamente
+            if index_geo in geotherm1:
+                isola2=dfisl.loc[geotherm1[index_geo]]
+                geotherm[isola2.ALL_Uniq]-=a
             geotherm[codice]+=a
             dfgeo=dfgeo.drop(index_geo)
         

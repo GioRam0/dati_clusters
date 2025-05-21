@@ -11,7 +11,7 @@ cartella_corrente = os.path.dirname(os.path.abspath(__file__))
 cartella_progetto = os.path.join(cartella_corrente, "..", "..")
 
 #importo coordinate isole
-isl_path=os.path.join(cartella_progetto, "data/isole_filtrate", "isole_filtrate2_arro3.gpkg")
+isl_path=os.path.join(cartella_progetto, "data/isole_filtrate/finali", "isole_arro3.gpkg")
 gdf = gp.read_file(isl_path)
 
 # percorso file config
@@ -24,16 +24,15 @@ ee.Initialize(project=proj)
 
 #scelgo il dataset e seleziono diversi anni per ridurre la varianza
 dataset = ee.ImageCollection("ECMWF/ERA5/MONTHLY")
-dataset=dataset.filterDate("2016-06-01", "2020-05-31")
 
 #ultima data disponibile
-#sorted_collection = dataset.sort('system:time_start', False)
-#last_image = sorted_collection.first()
-#timestamp_ms = last_image.get('system:time_start').getInfo()
-#print(timestamp_ms)
-#import datetime
-#last_date = datetime.datetime.fromtimestamp(timestamp_ms/1000.0)
-#print(last_date)
+sorted_collection = dataset.sort('system:time_start', False)
+last_image = sorted_collection.first()
+timestamp_ms = last_image.get('system:time_start').getInfo()
+import datetime
+last_date = datetime.datetime.fromtimestamp(timestamp_ms/1000.0)
+print(f"data dell'ultima immagine:{last_date}")
+dataset=dataset.filterDate("2016-06-01", "2020-05-31")
 
 #funzioni per calcolare medie di temperatura e prcipitazioni
 def mean_temp(image):
@@ -75,14 +74,12 @@ else:
     prec={}
     prec_nodata={}
 
-gdf=gdf.sort_values(by='IslandArea', ascending=False)
-
+print(f'isole da analizzare: {len(gdf)}')
 #itero per le isole
 for k, (i, isl) in enumerate(gdf.iterrows(), 1):
+    if k % 100 == 0 or k==len(gdf):
+        print(f'{k} isole analizzate')
     if k % 10 == 0:
-        if k % 100 == 0:
-            print(k)
-            print(isl.IslandArea)
         #esportazione periodica per non dover riiniziare da capo in caso di interruzione
         output_path=os.path.join(output_folder, "temp.pkl")
         with open(output_path, "wb") as f:
@@ -97,7 +94,7 @@ for k, (i, isl) in enumerate(gdf.iterrows(), 1):
         with open(output_path, "wb") as f:
             pickle.dump(prec_nodata, f)
     codice=isl.ALL_Uniq
-    if codice not in prec:
+    if codice not in temp:
         multipoli=isl.geometry
         multip_list = [
             [list(vertice) for vertice in poligono.exterior.coords]
@@ -114,7 +111,6 @@ for k, (i, isl) in enumerate(gdf.iterrows(), 1):
             #temperatura espressa in kelvin
             temp[codice]=np.mean(mean_list1)-273
             temp_nodata[codice]=0
-        print(temp[codice])
     
         prec_means = collection.map(mean_prec)
         mean_list2 = prec_means.aggregate_array("mean_prec").getInfo()

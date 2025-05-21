@@ -30,46 +30,47 @@ maxy=bounds.exterior.coords[1][1]
 miny=bounds.exterior.coords[0][1]
 
 #importo dati isole
-percorso_file=os.path.join(cartella_progetto, "data/isole_filtrate", "isole_filtrate2_arro4.gpkg")
+percorso_file=os.path.join(cartella_progetto, "data/isole_filtrate/finali", "isole_arro4.gpkg")
 gdf = gp.read_file(percorso_file)
 
 #funzione che prende in input isola e raster e riporta il valore medio
 def media(multipoligono,sr):
-    out_image, out_transform = rasterio.mask.mask(sr, [mapping(multipoligono)], crop=True)
+    out_image, out_transform = rasterio.mask.mask(sr, [mapping(multipoligono)], crop=True, all_touched=True)
     no_data_value = src.nodata
-    valid_pixels = out_image[out_image != no_data_value]
+    valid_pixels = out_image[(out_image != no_data_value) & (out_image != 0)]
     mean = np.mean(valid_pixels)
     return mean
-#funzione che prende in input l'isola e restituisce pvout medio annuale e la sua varianza mensile
+#funzione che prende in input l'isola e restituisce pvout medio annuale e il seasonality index come rapporto tra media mensile max e min
 def richiesta(multip):
     out=media(multip, src)
     mesi=[]
     for i in range(1,13):
         mesi.append(media(multip,globals()[f"src{i}"]))
-    var=np.var(mesi)
-    return out,var
+    sea_index=max(mesi)/min(mesi)
+    return out,sea_index
 
 pvout_mean={} #dizionario con codici come chiavi e insolazione media come valori
-pvout_var={} #dizionario con codici come chiavi e varianza mensile media come valori
+pvout_ind={} #dizionario con codici come chiavi e i seasonality indexes delle medie mensili come valori
 #dizionario con codici come chiavi e lista di due binari come valori
 #il primo valore pari a 1 indica che l'isola si trova tutta fuori dai limiti 65, -60 e non si hanno dati
 #il secondo valore pari a 1 indica che almeno un punto si trova fuori dai limiti
 isola_out={}
-k=0
-for i,isl in gdf.iterrows():
-    if k%100==0:
-        print(k)
-    k+=1
+print(f'isole da analizzare:{len(gdf)}')
+for k,(i,isl) in enumerate(gdf.iterrows(),1):
+    if k%250==0 or k==len(gdf):
+        print(f'{k} isole analizzate')
     codice=isl.ALL_Uniq
     multi=isl.geometry
+    #isola completamente fuori
     if multi.disjoint(bounds):
         pvout_mean[codice]=np.nan
-        pvout_var[codice]=np.nan
+        pvout_ind[codice]=np.nan
         isola_out[codice]=[1,1]
     else:
-        out,var=richiesta(multi)
+        out,s_ind=richiesta(multi)
         pvout_mean[codice]=out
-        pvout_var[codice]=var
+        pvout_ind[codice]=s_ind
+        #isola completamente dentro o parzialmente fuori
         if multi.within(bounds):
             isola_out[codice]=[0,0]
         else:
@@ -81,9 +82,9 @@ os.makedirs(percorso_folder_out, exist_ok=True)
 percorso_file=os.path.join(percorso_folder_out, "solar_pow.pkl")
 with open(percorso_file, "wb") as f:
     pickle.dump(pvout_mean, f)
-percorso_file= os.path.join(percorso_folder_out, "solar_var.pkl")
+percorso_file= os.path.join(percorso_folder_out, "solar_seas_ind.pkl")
 with open(percorso_file, "wb") as f:
-    pickle.dump(pvout_var, f)
+    pickle.dump(pvout_ind, f)
 percorso_file= os.path.join(percorso_folder_out, "solar_nodata.pkl")
 with open(percorso_file, "wb") as f:
     pickle.dump(isola_out, f)

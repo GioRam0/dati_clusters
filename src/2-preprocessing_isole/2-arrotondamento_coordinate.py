@@ -9,7 +9,7 @@ cartella_corrente = os.path.dirname(os.path.abspath(__file__))
 cartella_progetto = os.path.join(cartella_corrente, "..", "..")
 
 # percorso completo per il file .gpkg
-percorso_file = os.path.join(cartella_progetto, "data/isole_filtrate", "isole_filtrate.gpkg")
+percorso_file = os.path.join(cartella_progetto, "data/isole_filtrate/filtro_superficie", "isole.gpkg")
 gdf = gp.read_file(percorso_file)
 
 #funzione che arrotonda a due cifre decimali le coordinate dei vari punti
@@ -30,15 +30,13 @@ def rimuovi(poligono):
 def poligono_semplificato(poligono, cifra):
     poligono_arrotondato=arrotonda(poligono, cifra)
     poligonosemplificato=rimuovi(poligono_arrotondato)
-#    return poligonosemplificato
-print('lunghezza del file:')
-print(len(gdf))
-k=0
+    return poligonosemplificato
+
+print(f'lunghezza del file: {len(gdf)}')
 #itero per le isole
-for i,isl in gdf.iterrows():
-    if k%500==0:
-        print(k)
-    k+=1
+for k,(i,isl) in enumerate(gdf.iterrows(), 1):
+    if k%2000==0:
+        print(f'{k} isole svolte')
     multi_originale=isl.geometry
     poligoni=[]
     #itero per i poligoni che compongono il multipoligono e li aggiungo alla lista
@@ -49,15 +47,14 @@ for i,isl in gdf.iterrows():
     #imposto la geometria dell'isola come il multipoligono creato dalla lista di poligoni appena generata
     gdf.loc[i,'geometry']=MultiPolygon(poligoni)
 #esportazione gpkg
-percorso_out = os.path.join(cartella_progetto, "data/isole_filtrate/isole_filtrate_arro4.gpkg")
+percorso_out = os.path.join(cartella_progetto, "data/isole_filtrate/filtro_superficie/isole_arro4.gpkg")
 gdf.to_file(percorso_out, driver="GPKG")
 
-k=0
-#itero per le isole, ripeto con 2 e 3 cifre
-for i,isl in gdf.iterrows():
-    if k%500==0:
-        print(k)
-    k+=1
+#ripeto con 3 e 2 cifre decimali
+print('ripeto per arrotondare a 3 cifre')
+for k,(i,isl) in enumerate(gdf.iterrows(), 1):
+    if k%2000==0:
+        print(f'{k} isole svolte')
     multi_originale=isl.geometry
     poligoni=[]
     #itero per i poligoni che compongono il multipoligono e li aggiungo alla lista
@@ -68,15 +65,13 @@ for i,isl in gdf.iterrows():
     #imposto la geometria dell'isola come il multipoligono creato dalla lista di poligoni appena generata
     gdf.loc[i,'geometry']=MultiPolygon(poligoni)
 #esportazione gpkg
-percorso_out = os.path.join(cartella_progetto, "data/isole_filtrate/isole_filtrate_arro3.gpkg")
+percorso_out = os.path.join(cartella_progetto, "data/isole_filtrate/filtro_superficie/isole_arro3.gpkg")
 gdf.to_file(percorso_out, driver="GPKG")
 
-k=0
-#itero per le isole
-for i,isl in gdf.iterrows():
-    if k%500==0:
-        print(k)
-    k+=1
+print('ripeto per arrotondare a 2 cifre')
+for k,(i,isl) in enumerate(gdf.iterrows(), 1):
+    if k%2000==0:
+        print(f'{k} isole svolte')
     multi_originale=isl.geometry
     poligoni=[]
     #itero per i poligoni che compongono il multipoligono e li aggiungo alla lista
@@ -86,6 +81,7 @@ for i,isl in gdf.iterrows():
             poligoni.append(poligono)
     #imposto la geometria dell'isola come il multipoligono creato dalla lista di poligoni appena generata
     gdf.loc[i,'geometry']=MultiPolygon(poligoni)
+
 #esportazione gpkg
-percorso_out = os.path.join(cartella_progetto, "data/isole_filtrate/isole_filtrate_arro2.gpkg")
+percorso_out = os.path.join(cartella_progetto, "data/isole_filtrate/filtro_superficie/isole_arro2.gpkg")
 gdf.to_file(percorso_out, driver="GPKG")
